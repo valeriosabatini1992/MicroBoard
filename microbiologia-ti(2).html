@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positività microbiologiche, terapia intensiva</title>
+<style>
+:root{
+  --bg:#E9EEF2; --panel:#FFFFFF; --ink:#15222E; --muted:#5B6A77; --line:#D3DBE2; --line-strong:#B4C0CB;
+  --sig:#B3203A; --sig-t:#FBE8EB;
+  --col:#8A5600; --col-b:#D99A1E; --col-t:#FAF0D9;
+  --con:#55616C; --con-b:#8E9AA6; --con-t:#EBEEF1;
+  --pend:#2354C0; --pend-t:#E6EDFB;
+  --iso:#0E6F68; --iso-t:#DDF1EF;
+  --mdro:#2A1E5C;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI","Helvetica Neue",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--pend);outline-offset:2px}
+.muted{color:var(--muted)}
+.wrap{max-width:1360px;margin:0 auto;padding:18px 20px 60px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.top h1{margin:0;font-size:24px;line-height:1.15;font-weight:700;letter-spacing:-.015em}
+.top p{margin:4px 0 0;color:var(--muted);max-width:60ch;font-size:13.5px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tools label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.tools input[type=text]{border:1px solid var(--line-strong);border-radius:6px;padding:7px 9px;background:#fff;width:150px}
+.btn{border:1px solid var(--line-strong);background:#fff;border-radius:6px;padding:8px 13px;font-weight:600;font-size:14px}
+.btn:hover{background:#F3F6F8}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#243646}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{border-color:var(--sig);color:var(--sig)}
+
+/* Summary */
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.stat{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 15px 6px 7px;font-size:14px}
+.stat b{min-width:28px;height:28px;border-radius:999px;display:grid;place-items:center;color:#fff;font-size:14px;font-variant-numeric:tabular-nums}
+.stat.pend b{background:var(--pend)} .stat.sig b{background:var(--sig)} .stat.mdro b{background:var(--mdro)} .stat.iso b{background:var(--iso)}
+.stat:hover{border-color:var(--line-strong)}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tab{background:none;border:0;padding:10px 16px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab[aria-current=true]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab .n{display:inline-block;margin-left:6px;background:var(--pend);color:#fff;border-radius:999px;padding:0 7px;font-size:12px;line-height:19px}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.layout.has-detail{grid-template-columns:minmax(0,1fr) 450px}
+.detail{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.detail[hidden]{display:none}
+
+/* Bed board */
+.beds{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
+.bed{display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--line-strong);border-radius:6px;padding:12px 13px 12px 12px;min-height:150px}
+.bed:hover{border-color:var(--line-strong)}
+.bed.sig{border-left-color:var(--sig);border-left-width:9px;background:linear-gradient(90deg,var(--sig-t),#fff 55%)}
+.bed.pend{border-left:6px dashed var(--pend)}
+.bed.col{border-left-color:var(--col-b)}
+.bed.con{border-left-color:var(--con-b)}
+.bed.selected{outline:2px solid var(--ink);outline-offset:1px}
+.bed.free{border-left-color:var(--line);background:transparent;border-style:dashed;border-left-style:dashed;color:var(--muted);align-items:flex-start;justify-content:space-between}
+.bed-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;width:100%}
+.bed-no{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.bed-id{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bed-sum{font-size:13.5px;color:var(--muted)}
+.free-t{font-size:15px;font-weight:600}
+.free-a{font-size:13px;color:var(--pend);font-weight:600}
+.orgs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.org{display:flex;align-items:baseline;gap:7px;font-size:14px}
+.org i{width:9px;height:9px;flex:none;border-radius:2px;transform:translateY(0)}
+.org.sig{font-weight:700;color:var(--sig)} .org.sig i{background:var(--sig)}
+.org.pend{color:var(--pend);font-weight:600} .org.pend i{background:transparent;border:2px dashed var(--pend)}
+.org.col{color:var(--col)} .org.col i{background:var(--col-b)}
+.org.con{color:var(--con);font-size:13px} .org.con i{background:var(--con-b)}
+.org small{font-weight:400;color:var(--muted);font-size:12px}
+.badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.badge{font-size:12px;font-weight:700;border-radius:4px;padding:2px 7px}
+.badge.mdro{background:var(--mdro);color:#fff}
+.badge.iso{background:var(--iso-t);color:var(--iso);border:1px solid var(--iso)}
+.badge.nodx{background:#fff;color:var(--ink);border:1px solid var(--ink)}
+
+/* Chips */
+.chip{display:inline-block;font-size:12.5px;font-weight:700;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.chip.sig{background:var(--sig-t);color:var(--sig);border:1px solid var(--sig)}
+.chip.col{background:var(--col-t);color:var(--col);border:1px solid var(--col-b)}
+.chip.con{background:var(--con-t);color:var(--con);border:1px solid var(--con-b)}
+.chip.val,.chip.pend{background:var(--pend-t);color:var(--pend);border:1px dashed var(--pend)}
+
+/* Queue + tables */
+.list{display:flex;flex-direction:column;gap:10px}
+.qitem{background:var(--panel);border:1px solid var(--line);border-left:6px dashed var(--pend);border-radius:6px;padding:12px 14px;display:grid;gap:8px}
+.qitem.sig{border-left-color:var(--sig);border-left-style:solid;border-left-width:9px}
+.qtop{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;justify-content:space-between}
+.qtop h3{margin:0;font-size:17px}
+.qtop .lnk{background:none;border:0;color:var(--pend);font-weight:600;padding:0;text-decoration:underline}
+.reason{margin:0;font-size:13.5px;color:var(--muted);max-width:75ch}
+.empty{background:var(--panel);border:1px dashed var(--line-strong);border-radius:8px;padding:28px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+h2.sec{font-size:17px;margin:22px 0 8px}
+h2.sec:first-child{margin-top:0}
+.tbl-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.alert{background:var(--sig-t);border:1px solid var(--sig);color:#6E1123;border-radius:6px;padding:10px 12px;font-size:14px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+
+/* Segmented classification */
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg-b{border:1px solid var(--line-strong);background:#fff;border-radius:5px;padding:5px 10px;font-size:13px;font-weight:600;display:inline-flex;gap:6px;align-items:baseline}
+.seg-b small{font-size:11px;font-weight:600;color:var(--pend)}
+.seg-b.sig:hover,.seg-b.sig.on{background:var(--sig);border-color:var(--sig);color:#fff}
+.seg-b.col:hover,.seg-b.col.on{background:var(--col-b);border-color:var(--col-b);color:#2B1B00}
+.seg-b.con:hover,.seg-b.con.on{background:var(--con);border-color:var(--con);color:#fff}
+.seg-b.on small,.seg-b:hover small{color:inherit}
+.seg-b.sugg{border-style:dashed;border-color:var(--pend);border-width:2px;padding:4px 9px}
+
+/* Detail */
+.d-head{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:grid;gap:4px}
+.d-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.d-head h2{margin:0;font-size:22px;letter-spacing:-.01em}
+.d-body{padding:14px 18px 20px;display:grid;gap:14px}
+.d-body h3{margin:0;font-size:15px}
+.dx{font-size:14px}
+.iso-box{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;font-size:14px}
+.iso-box.on{background:var(--iso-t);border-color:var(--iso)}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.timeline{display:flex;flex-direction:column;gap:10px}
+.samp{border:1px solid var(--line);border-left:5px solid var(--line-strong);border-radius:6px;padding:10px 12px;display:grid;gap:6px}
+.samp.sig{border-left-color:var(--sig);border-left-width:8px}
+.samp.col{border-left-color:var(--col-b)}
+.samp.con{border-left-color:var(--con-b)}
+.samp.pend{border-left:5px dashed var(--pend)}
+.samp.neg{background:#F6F8FA;border-left-color:var(--line)}
+.samp-top{display:flex;gap:10px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.samp-top .date{font-weight:700;color:var(--ink)}
+.samp h4{margin:0;font-size:16px}
+.samp.sig h4{color:var(--sig)}
+.tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.tag{font-size:12px;border-radius:4px;padding:1px 7px;border:1px solid var(--line-strong);color:var(--muted)}
+.tag.neg{color:var(--ink);border-color:var(--line-strong);background:#fff;font-weight:600}
+.tag.pending{color:var(--pend);border-color:var(--pend);border-style:dashed;font-weight:600}
+.ab{margin:0;font-size:13px;color:var(--muted)}
+.audit{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.audit button{background:none;border:0;color:var(--pend);font-weight:600;padding:0;text-decoration:underline;font-size:12.5px}
+.prop{font-size:13.5px;display:grid;gap:5px}
+.close-d{display:none}
+
+/* Modal */
+.backdrop{position:fixed;inset:0;background:rgba(21,34,46,.55);z-index:50}
+.modal{position:fixed;z-index:51;top:4vh;left:50%;transform:translateX(-50%);width:min(680px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 18px 60px rgba(0,0,0,.35)}
+.m-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
+.m-head h2{margin:0;font-size:19px}
+.m-body{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.m-body .full{grid-column:1/-1}
+.m-body [hidden]{display:none}
+.fld{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.fld input,.fld select{border:1px solid var(--line-strong);border-radius:6px;padding:8px 9px;background:#fff;color:var(--ink);font-size:15px;width:100%}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--ink)}
+.check input{width:18px;height:18px;margin-top:2px}
+.preview{border:1px dashed var(--line-strong);border-radius:6px;padding:10px 12px;background:#F6F8FA;font-size:14px;display:grid;gap:5px}
+.m-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line);position:sticky;bottom:0;background:#fff}
+.err{margin:0 auto 0 0;color:var(--sig);font-weight:600;font-size:14px}
+
+@media (max-width:980px){
+  .layout.has-detail{grid-template-columns:minmax(0,1fr)}
+  .detail{position:fixed;inset:0;max-height:none;z-index:40;border-radius:0;border:0}
+  .close-d{display:inline-block}
+}
+@media (max-width:560px){
+  .wrap{padding:14px 12px 50px}
+  .m-body{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Positività microbiologiche</h1>
+      <p>Terapia intensiva. Prototipo con pazienti e referti fittizi: le regole di classificazione sono esempi da validare con il microbiologo o l'infettivologo prima di qualsiasi uso reale.</p>
+    </div>
+    <div class="tools">
+      <label>Operatore <input type="text" id="operator" placeholder="Il tuo nome" autocomplete="off"></label>
+      <button class="btn primary" type="button" data-action="new-sample">Nuovo esame</button>
+      <button class="btn" type="button" data-action="export">Esporta dati</button>
+      <button class="btn" type="button" data-action="import">Importa dati</button>
+      <input type="file" id="import-file" accept="application/json" hidden>
+    </div>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Riepilogo"></section>
+  <nav class="tabs" id="tabs" aria-label="Sezioni"></nav>
+
+  <div class="layout" id="layout">
+    <main id="list"></main>
+    <aside class="detail" id="detail" hidden aria-label="Scheda paziente"></aside>
+  </div>
+</div>
+<div id="modal"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- utilità ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const isoOf = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const NOW = new Date();
+const todayISO = isoOf(NOW);
+const ago = n => { const d = new Date(NOW); d.setDate(d.getDate()-n); return isoOf(d); };
+const fmt = s => new Date(s+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'});
+const daysSince = s => Math.max(0, Math.round((new Date(todayISO+'T12:00:00') - new Date(s+'T12:00:00'))/864e5));
+
+const LABEL = {sig:'Significativa', col:'Colonizzazione', con:'Contaminante probabile', val:'Da valutare'};
+const SHORT = {sig:'Significativa', col:'Colonizzazione', con:'Contaminante'};
+const BEDS = 12;
+const SITES = ['Sangue','Liquor','Liquido pleurico','Aspirato tracheale','BAL','Urine','Tampone rettale','Tampone nasale','Punta di CVC','Siero','Feci','Ferita o altro'];
+const TESTS = ['Colturale','PCR/biologia molecolare','Sierologia','Antigene','Tossina'];
+const MDROS = ['','MRSA','VRE','ESBL','CRE/CPE','Acinetobacter CR','Pseudomonas CR','Candida auris'];
+const ORGS = ['Staphylococcus aureus (MSSA)','Staphylococcus aureus MRSA','Staphylococcus epidermidis','Escherichia coli','Klebsiella pneumoniae','Pseudomonas aeruginosa','Acinetobacter baumannii','Enterococcus faecalis','Enterococcus faecium','Candida albicans','Candida auris','Streptococcus pneumoniae','Bacillus cereus','Clostridioides difficile (tossina)','West Nile virus (IgM)'];
+
+/* ---------- regole di classificazione (esempi, da validare) ---------- */
+const STERILE = ['Liquor','Liquido pleurico'];
+const SURV = ['Tampone rettale','Tampone nasale'];
+const CONTAM = /epidermidis|coagulasi|CoNS|corynebacter|bacillus|cutibacter|propionibacter|viridans|mitis|oralis|sanguinis|salivarius|micrococc/i;
+const TRUE_P = /aureus|candida|escherichia|e\. coli|klebsiella|pseudomonas|enterobacter|acinetobacter|pneumoniae|serratia|proteus|enterococc|pyogenes|agalactiae|listeria|neisseria/i;
+
+function suggest(s){
+  if(s.result !== 'pos') return null;
+  const org = s.org || '';
+  const contam = CONTAM.test(org) && !TRUE_P.test(org);
+  if(SURV.includes(s.site)){
+    return s.clinical
+      ? {cat:'val', reason:'Tampone di sorveglianza con sospetto clinico di infezione nello stesso sito: valutare.'}
+      : {cat:'col', reason:'Tampone di sorveglianza: di norma colonizzazione, non infezione.'};
+  }
+  if(['Sierologia','PCR/biologia molecolare','Antigene','Tossina'].includes(s.test)){
+    if(s.test === 'Tossina' && !s.clinical) return {cat:'val', reason:'Tossina positiva senza sintomi clinici: possibile portatore, valutare.'};
+    return {cat:'sig', reason:'Test diagnostico specifico positivo ('+s.test+' su '+s.site.toLowerCase()+'): da leggere insieme al quadro clinico.'};
+  }
+  if(s.site === 'Sangue'){
+    if(contam){
+      if((s.setsPos||0) >= 2) return {cat:'sig', reason:org+' in '+s.setsPos+' set su '+s.setsTot+': concordanza tra set, contaminazione poco probabile.'};
+      if(s.clinical) return {cat:'val', reason:org+' in un solo set, ma con sospetto clinico: valutare, eventualmente ripetere le emocolture.'};
+      return {cat:'con', reason:org+' in '+(s.setsPos||1)+' set su '+(s.setsTot||'?')+': germe tipico di cute o ambiente, isolato in un solo set.'};
+    }
+    if(TRUE_P.test(org)) return {cat:'sig', reason:org+' in emocoltura: patogeno raramente contaminante, da considerare sempre significativo.'};
+    return {cat:'val', reason:'Germe non previsto dalle regole: valutazione clinica.'};
+  }
+  if(STERILE.includes(s.site)){
+    if(contam) return {cat:'val', reason:'Germe di norma contaminante da sito sterile: valutare (materiale protesico o derivazione, ripetizione).'};
+    return {cat:'sig', reason:'Isolamento da sito normalmente sterile.'};
+  }
+  if(s.site === 'Aspirato tracheale' || s.site === 'BAL'){
+    if(/candida/i.test(org)) return {cat:'col', reason:'Candida da campione respiratorio: quasi sempre colonizzazione.'};
+    if(s.site === 'BAL' && s.cfu >= 1e4) return {cat:'sig', reason:'BAL con carica di almeno 10^4 UFC/ml: soglia compatibile con polmonite.'};
+    if(s.clinical) return {cat:'val', reason:'Campione respiratorio con sospetto clinico di VAP: valutare criteri clinici e radiologici.'};
+    return {cat:'col', reason:'Campione respiratorio senza sospetto clinico di infezione: colonizzazione probabile.'};
+  }
+  if(s.site === 'Urine'){
+    if(s.clinical) return {cat:'val', reason:'Urinocoltura con sospetto clinico di infezione urinaria: valutare.'};
+    return {cat:'col', reason:(/candida/i.test(org)?'Candiduria':'Urinocoltura')+' senza sintomi né segni di infezione urinaria: colonizzazione probabile (catetere).'};
+  }
+  if(s.site === 'Punta di CVC') return {cat:'val', reason:'Punta di CVC: significativa solo con emocoltura concordante.'};
+  return {cat:'val', reason:'Nessuna regola specifica per questo sito: valutazione clinica.'};
+}
+
+/* ---------- dati di esempio ---------- */
+let uid = 100;
+function mk(o){
+  const s = Object.assign({id:'s'+(uid++), result:'pos', org:'', label:'', setsPos:null, setsTot:null, cfu:null, mdro:'', ab:'', clinical:false, cat:null, by:'', at:'', note:''}, o);
+  s.proposal = suggest(s);
+  s.status = o.status || (s.result === 'pos' ? 'pending' : 'none');
+  return s;
+}
+const OP = 'Dott. Rossi';
+const conf = (cat, at) => ({status:'confirmed', cat, by:OP, at});
+
+const seed = {
+  operator:'',
+  patients:[
+    {id:'p1', bed:1, code:'TI-0417', age:58, sex:'M', admitted:ago(3), summary:'Meningite batterica', dx:'Meningite pneumococcica', iso:null, nodx:false},
+    {id:'p2', bed:2, code:'TI-0388', age:47, sex:'F', admitted:ago(9), summary:'Encefalite', dx:'Encefalite da West Nile virus', iso:null, nodx:false},
+    {id:'p3', bed:3, code:'TI-0402', age:71, sex:'M', admitted:ago(11), summary:'Encefalite', dx:'Eziologia non ancora identificata', iso:null, nodx:true},
+    {id:'p4', bed:4, code:'TI-0421', age:66, sex:'F', admitted:ago(14), summary:'Polmonite associata a ventilatore', dx:'VAP da Pseudomonas aeruginosa resistente ai carbapenemi', iso:{type:'Contatto', since:ago(6), reason:'Pseudomonas CR'}, nodx:false},
+    {id:'p5', bed:5, code:'TI-0409', age:63, sex:'M', admitted:ago(20), summary:'Sepsi addominale post-operatoria', dx:'Portatore rettale di KPC', iso:{type:'Contatto', since:ago(15), reason:'CRE/CPE da tampone rettale'}, nodx:false},
+    {id:'p6', bed:6, code:'TI-0425', age:79, sex:'F', admitted:ago(8), summary:'Insufficienza respiratoria acuta', dx:'', iso:{type:'Contatto', since:ago(7), reason:'MRSA da tampone nasale'}, nodx:false},
+    {id:'p7', bed:7, code:'TI-0431', age:52, sex:'M', admitted:ago(5), summary:'Shock settico di origine addominale', dx:'', iso:null, nodx:false},
+    {id:'p8', bed:8, code:'TI-0399', age:34, sex:'F', admitted:ago(12), summary:'Sepsi da catetere venoso centrale', dx:'Batteriemia da S. aureus', iso:null, nodx:false},
+    {id:'p9', bed:9, code:'TI-0433', age:45, sex:'M', admitted:ago(2), summary:'Politrauma, ventilazione meccanica', dx:'', iso:null, nodx:false},
+    {id:'p10', bed:10, code:'TI-0410', age:81, sex:'M', admitted:ago(10), summary:'Diarrea in corso di terapia antibiotica', dx:'Infezione da Clostridioides difficile', iso:{type:'Contatto', since:ago(3), reason:'Clostridioides difficile'}, nodx:false}
+  ],
+  samples:[
+    // Letto 1: meningite pneumococcica
+    mk({pid:'p1', date:ago(3), site:'Liquor', test:'Colturale', org:'Streptococcus pneumoniae', ab:'Penicillina S, ceftriaxone S', ...conf('sig',ago(3))}),
+    mk({pid:'p1', date:ago(3), site:'Sangue', test:'Colturale', org:'Streptococcus pneumoniae', setsPos:2, setsTot:2, ab:'Penicillina S, ceftriaxone S', ...conf('sig',ago(3))}),
+    mk({pid:'p1', date:ago(3), site:'Urine', test:'Antigene', org:'Antigene urinario pneumococco', ...conf('sig',ago(3))}),
+    // Letto 2: encefalite West Nile + Bacillus cereus
+    mk({pid:'p2', date:ago(8), site:'Liquor', test:'PCR/biologia molecolare', result:'neg', label:'HSV, VZV, enterovirus'}),
+    mk({pid:'p2', date:ago(5), site:'Siero', test:'Sierologia', org:'West Nile virus (IgM)', ...conf('sig',ago(5))}),
+    mk({pid:'p2', date:ago(4), site:'Liquor', test:'Sierologia', org:'West Nile virus (IgM liquorali)', ...conf('sig',ago(4))}),
+    mk({pid:'p2', date:ago(2), site:'Sangue', test:'Colturale', org:'Bacillus cereus', setsPos:1, setsTot:2, ab:'Vancomicina S, clindamicina S'}),
+    // Letto 3: encefalite senza diagnosi
+    mk({pid:'p3', date:ago(10), site:'Liquor', test:'Colturale', result:'neg', label:'Coltura batterica'}),
+    mk({pid:'p3', date:ago(10), site:'Liquor', test:'PCR/biologia molecolare', result:'neg', label:'Pannello meningoencefalite'}),
+    mk({pid:'p3', date:ago(8), site:'Siero', test:'Sierologia', result:'neg', label:'West Nile, HSV, CMV, EBV, Borrelia'}),
+    mk({pid:'p3', date:ago(3), site:'Liquor', test:'PCR/biologia molecolare', result:'neg', label:'HSV e VZV, ripetizione'}),
+    mk({pid:'p3', date:ago(4), site:'Liquor', test:'Sierologia', result:'pending', label:'Anticorpi anti-neuronali'}),
+    mk({pid:'p3', date:ago(2), site:'Aspirato tracheale', test:'Colturale', org:'Candida albicans', ...conf('col',ago(1))}),
+    // Letto 4: VAP da Pseudomonas CR
+    mk({pid:'p4', date:ago(6), site:'BAL', test:'Colturale', org:'Pseudomonas aeruginosa', cfu:1e5, mdro:'Pseudomonas CR', ab:'Meropenem R, ceftazidime R, colistina S', clinical:true, ...conf('sig',ago(6))}),
+    // Letto 5: KPC + CoNS
+    mk({pid:'p5', date:ago(15), site:'Tampone rettale', test:'Colturale', org:'Klebsiella pneumoniae KPC', mdro:'CRE/CPE', ab:'Meropenem R, colistina S', ...conf('col',ago(15))}),
+    mk({pid:'p5', date:ago(4), site:'Sangue', test:'Colturale', org:'Staphylococcus epidermidis', setsPos:1, setsTot:4, ...conf('con',ago(4))}),
+    // Letto 6: MRSA nasale + candiduria
+    mk({pid:'p6', date:ago(7), site:'Tampone nasale', test:'Colturale', org:'Staphylococcus aureus MRSA', mdro:'MRSA', ...conf('col',ago(7))}),
+    mk({pid:'p6', date:ago(2), site:'Urine', test:'Colturale', org:'Candida albicans', cfu:1e5}),
+    // Letto 7: E. coli ESBL in sangue
+    mk({pid:'p7', date:ago(1), site:'Sangue', test:'Colturale', org:'Escherichia coli', setsPos:2, setsTot:2, mdro:'ESBL', ab:'Ceftriaxone R, piperacillina/tazobactam R, meropenem S'}),
+    // Letto 8: S. aureus da CVC
+    mk({pid:'p8', date:ago(4), site:'Sangue', test:'Colturale', org:'Staphylococcus aureus (MSSA)', setsPos:2, setsTot:2, ab:'Oxacillina S, vancomicina S', ...conf('sig',ago(4))}),
+    mk({pid:'p8', date:ago(4), site:'Punta di CVC', test:'Colturale', org:'Staphylococcus aureus (MSSA)', cfu:15, note:'Concordante con emocoltura', ...conf('sig',ago(3))}),
+    // Letto 9: MSSA da aspirato
+    mk({pid:'p9', date:ago(1), site:'Aspirato tracheale', test:'Colturale', org:'Staphylococcus aureus (MSSA)', cfu:1e6, ab:'Oxacillina S'}),
+    // Letto 10: C. difficile + enterococco urinario
+    mk({pid:'p10', date:ago(6), site:'Urine', test:'Colturale', org:'Enterococcus faecalis', cfu:1e4, ...conf('col',ago(6))}),
+    mk({pid:'p10', date:ago(3), site:'Feci', test:'Tossina', org:'Clostridioides difficile (tossina A/B)', clinical:true, ...conf('sig',ago(3))})
+  ]
+};
+
+let db = JSON.parse(JSON.stringify(seed));
+const ui = {tab:'beds', pid:null, confirmFree:null};
+
+/* ---------- accesso ai dati ---------- */
+const patientOf = id => db.patients.find(p => p.id === id);
+const samplesOf = pid => db.samples.filter(s => s.pid === pid);
+const isPos = s => s.result === 'pos';
+const eff = s => s.status === 'confirmed' ? s.cat : 'pend';
+const isMdro = s => isPos(s) && s.mdro && !(s.status === 'confirmed' && s.cat === 'con');
+const needsIso = p => !p.iso && samplesOf(p.id).some(isMdro);
+const RANK = {sig:0, val:1, col:2, con:3};
+
+/* ---------- componenti ---------- */
+function chip(cat){ return '<span class="chip '+cat+'">'+LABEL[cat]+'</span>'; }
+
+function seg(s){
+  return '<div class="seg" role="group" aria-label="Classificazione">' + ['sig','col','con'].map(c => {
+    const on = s.status === 'confirmed' && s.cat === c;
+    const sg = s.status === 'pending' && s.proposal && s.proposal.cat === c;
+    return '<button type="button" class="seg-b '+c+(on?' on':'')+(sg?' sugg':'')+'" aria-pressed="'+on+'" data-action="confirm" data-sid="'+s.id+'" data-cat="'+c+'">'+SHORT[c]+(sg?'<small>suggerita</small>':'')+'</button>';
+  }).join('') + '</div>';
+}
+
+function bedCard(n){
+  const p = db.patients.find(x => x.bed === n);
+  if(!p){
+    return '<button type="button" class="bed free" data-action="admit" data-bed="'+n+'"><span class="bed-head"><span class="bed-no">Letto '+n+'</span></span><span><span class="free-t">Libero</span><br><span class="free-a">Assegna paziente</span></span></button>';
+  }
+  const pos = samplesOf(p.id).filter(isPos);
+  const by = c => pos.filter(s => eff(s) === c);
+  const level = by('sig').length ? 'sig' : by('pend').length ? 'pend' : by('col').length ? 'col' : by('con').length ? 'con' : 'none';
+  const seen = new Set(), lines = [];
+  ['sig','pend','col','con'].forEach(c => by(c).forEach(s => { const k = c+'|'+s.org; if(!seen.has(k)){ seen.add(k); lines.push({c, s}); } }));
+  const tagTxt = {sig:'', pend:'da rivedere', col:'colonizzazione', con:'contaminante'};
+  const shown = lines.slice(0,4).map(l => '<li class="org '+l.c+'"><i></i><span>'+esc(l.s.org)+(tagTxt[l.c] ? ' <small>'+tagTxt[l.c]+'</small>' : '')+'</span></li>').join('');
+  const more = lines.length > 4 ? '<li class="org con"><span>+ altri '+(lines.length-4)+'</span></li>' : '';
+  const mdros = [...new Set(pos.filter(isMdro).map(s => s.mdro))];
+  const badges = mdros.map(m => '<span class="badge mdro">'+esc(m)+'</span>').join('')
+    + (p.iso ? '<span class="badge iso">Isolamento '+esc(p.iso.type.toLowerCase())+'</span>' : '')
+    + (p.nodx ? '<span class="badge nodx">Eziologia non identificata</span>' : '');
+  return '<button type="button" class="bed '+level+(ui.pid===p.id?' selected':'')+'" data-action="select" data-pid="'+p.id+'">'
+    + '<span class="bed-head"><span class="bed-no">Letto '+n+'</span><span class="bed-id">'+esc(p.code)+', '+p.age+' '+esc(p.sex)+'</span></span>'
+    + '<span class="bed-sum">'+esc(p.summary)+'</span>'
+    + (lines.length ? '<ul class="orgs">'+shown+more+'</ul>' : '<span class="bed-sum">Nessuna positività</span>')
+    + (badges ? '<span class="badges">'+badges+'</span>' : '')
+    + '</button>';
+}
+
+function queueHTML(){
+  const items = db.samples.filter(s => isPos(s) && s.status === 'pending' && patientOf(s.pid))
+    .sort((a,b) => (RANK[a.proposal.cat]-RANK[b.proposal.cat]) || b.date.localeCompare(a.date));
+  if(!items.length) return '<div class="empty"><strong>Nessuna positività da rivedere</strong>Le nuove positività compaiono qui finché un medico non le classifica.</div>';
+  return '<div class="list">' + items.map(s => {
+    const p = patientOf(s.pid);
+    return '<article class="qitem '+(s.proposal.cat==='sig'?'sig':'')+'">'
+      + '<div class="qtop"><h3>'+esc(s.org)+'</h3><button type="button" class="lnk" data-action="select" data-pid="'+p.id+'">Letto '+p.bed+', '+esc(p.code)+'</button></div>'
+      + '<div class="tags">'+chip(s.proposal.cat)+'<span class="tag">'+esc(s.site)+', '+esc(s.test)+'</span><span class="tag">'+fmt(s.date)+'</span>'
+      + (s.mdro ? '<span class="badge mdro">'+esc(s.mdro)+'</span>' : '')
+      + (s.setsTot ? '<span class="tag">'+s.setsPos+' set su '+s.setsTot+'</span>' : '')
+      + '</div>'
+      + '<p class="reason">'+esc(s.proposal.reason)+'</p>'
+      + (s.ab ? '<p class="ab">'+esc(s.ab)+'</p>' : '')
+      + seg(s)
+      + '</article>';
+  }).join('') + '</div>';
+}
+
+function mdroHTML(){
+  const noIso = db.patients.filter(needsIso);
+  const alerts = noIso.map(p => '<div class="alert"><span><strong>Letto '+p.bed+', '+esc(p.code)+':</strong> germe MDRO senza isolamento attivo.</span><button type="button" class="btn small" data-action="iso-start" data-pid="'+p.id+'" data-type="Contatto">Avvia isolamento di contatto</button></div>').join('');
+  const isoRows = db.patients.filter(p => p.iso).sort((a,b) => a.bed-b.bed).map(p =>
+    '<tr><td><strong>Letto '+p.bed+'</strong><br><span class="muted">'+esc(p.code)+'</span></td><td>'+esc(p.iso.type)+'</td><td>'+esc(p.iso.reason)+'</td><td>dal '+fmt(p.iso.since)+', giorno '+(daysSince(p.iso.since)+1)+'</td><td><button type="button" class="btn small" data-action="iso-stop" data-pid="'+p.id+'">Revoca</button></td></tr>').join('');
+  const mRows = db.samples.filter(s => isMdro(s) && patientOf(s.pid)).sort((a,b) => b.date.localeCompare(a.date)).map(s => {
+    const p = patientOf(s.pid);
+    return '<tr><td><strong>Letto '+p.bed+'</strong><br><span class="muted">'+esc(p.code)+'</span></td><td>'+esc(s.org)+'</td><td><span class="badge mdro">'+esc(s.mdro)+'</span></td><td>'+esc(s.site)+'</td><td>'+fmt(s.date)+'</td><td>'+chip(s.status==='confirmed'?s.cat:s.proposal.cat)+(s.status==='pending'?' <span class="tag pending">da rivedere</span>':'')+'</td></tr>';
+  }).join('');
+  return (alerts ? '<div class="list" style="margin-bottom:16px">'+alerts+'</div>' : '')
+    + '<h2 class="sec">Isolamenti attivi</h2>'
+    + (isoRows ? '<div class="tbl-wrap"><table><thead><tr><th>Paziente</th><th>Tipo</th><th>Motivo</th><th>Durata</th><th></th></tr></thead><tbody>'+isoRows+'</tbody></table></div>' : '<div class="empty">Nessun isolamento attivo.</div>')
+    + '<h2 class="sec">Germi multiresistenti (MDRO)</h2>'
+    + (mRows ? '<div class="tbl-wrap"><table><thead><tr><th>Paziente</th><th>Germe</th><th>Profilo</th><th>Sito</th><th>Data</th><th>Classificazione</th></tr></thead><tbody>'+mRows+'</tbody></table></div>' : '<div class="empty">Nessun germe MDRO registrato.</div>');
+}
+
+function sampRow(s){
+  const head = '<div class="samp-top"><span class="date">'+fmt(s.date)+'</span><span>'+esc(s.site)+', '+esc(s.test)+'</span></div>';
+  if(!isPos(s)){
+    return '<article class="samp neg">'+head+'<div class="tags"><span class="tag '+(s.result==='neg'?'neg':'pending')+'">'+(s.result==='neg'?'Negativo':'In corso')+'</span><span>'+esc(s.label)+'</span></div></article>';
+  }
+  const cls = eff(s);
+  const tags = [];
+  if(s.mdro) tags.push('<span class="badge mdro">'+esc(s.mdro)+'</span>');
+  if(s.setsTot) tags.push('<span class="tag">'+s.setsPos+' set su '+s.setsTot+'</span>');
+  if(s.cfu) tags.push('<span class="tag">'+(s.cfu>=1000 ? '10^'+Math.round(Math.log10(s.cfu)) : s.cfu)+' UFC</span>');
+  if(s.clinical) tags.push('<span class="tag">Sospetto clinico</span>');
+  let foot;
+  if(s.status === 'pending'){
+    foot = '<div class="prop"><div>'+chip(s.proposal.cat)+'</div><span class="muted">'+esc(s.proposal.reason)+'</span><span>Conferma la classificazione:</span>'+seg(s)+'</div>';
+  } else {
+    const differs = s.proposal && s.proposal.cat !== s.cat ? '<span>Il sistema proponeva: '+LABEL[s.proposal.cat].toLowerCase()+'.</span>' : '';
+    foot = '<div class="tags">'+chip(s.cat)+'</div>'
+      + (s.note ? '<p class="ab">'+esc(s.note)+'</p>' : '')
+      + '<div class="audit"><span>Classificata da '+esc(s.by)+' il '+fmt(s.at)+'.</span>'+differs+'<button type="button" data-action="reopen" data-sid="'+s.id+'">Riapri</button></div>'
+      + '<details><summary class="muted" style="font-size:12.5px;cursor:pointer">Cambia classificazione</summary><div style="margin-top:6px">'+seg(s)+'</div></details>';
+  }
+  return '<article class="samp '+cls+'">'+head+'<h4>'+esc(s.org)+'</h4>'+(tags.length?'<div class="tags">'+tags.join('')+'</div>':'')+(s.ab?'<p class="ab">'+esc(s.ab)+'</p>':'')+foot+'</article>';
+}
+
+function detailHTML(p){
+  const ss = samplesOf(p.id).slice().sort((a,b) => b.date.localeCompare(a.date));
+  const banner = needsIso(p)
+    ? '<div class="alert"><span><strong>Germe MDRO senza isolamento attivo.</strong></span><button type="button" class="btn small" data-action="iso-start" data-pid="'+p.id+'" data-type="Contatto">Avvia isolamento di contatto</button></div>' : '';
+  const isoBox = p.iso
+    ? '<div class="iso-box on"><div><strong>Isolamento '+esc(p.iso.type.toLowerCase())+'</strong>, giorno '+(daysSince(p.iso.since)+1)+' (dal '+fmt(p.iso.since)+')<br><span class="muted">'+esc(p.iso.reason)+'</span></div><button type="button" class="btn small" data-action="iso-stop" data-pid="'+p.id+'">Revoca</button></div>'
+    : '<div class="iso-box"><span class="muted">Nessun isolamento attivo</span><div class="btn-row"><span class="muted">Avvia:</span>'+['Contatto','Droplet','Aereo'].map(t => '<button type="button" class="btn small" data-action="iso-start" data-pid="'+p.id+'" data-type="'+t+'">'+t+'</button>').join('')+'</div></div>';
+  const free = ui.confirmFree === p.id
+    ? '<span class="muted">Rimuove paziente ed esami dall\'elenco.</span><button type="button" class="btn small danger" data-action="free-yes" data-pid="'+p.id+'">Conferma</button><button type="button" class="btn small" data-action="free-no">Annulla</button>'
+    : '<button type="button" class="btn small" data-action="free-ask" data-pid="'+p.id+'">Libera letto</button>';
+  return '<div class="d-head"><div class="d-row"><h2>Letto '+p.bed+'</h2><button type="button" class="btn small" data-action="close-detail">Chiudi</button></div>'
+    + '<div class="muted">'+esc(p.code)+', '+p.age+' anni, '+esc(p.sex)+'. Ricoverato il '+fmt(p.admitted)+' (giorno '+(daysSince(p.admitted)+1)+').</div></div>'
+    + '<div class="d-body">'
+    + '<div><h3>'+esc(p.summary)+'</h3>'+(p.dx?'<div class="dx">'+esc(p.dx)+'</div>':'')
+    + '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn small" data-action="toggle-nodx" data-pid="'+p.id+'" aria-pressed="'+p.nodx+'">'+(p.nodx?'Rimuovi "eziologia non identificata"':'Segna eziologia non identificata')+'</button></div></div>'
+    + banner + isoBox
+    + '<div class="d-row"><h3>Esami</h3><button type="button" class="btn small primary" data-action="add-sample" data-pid="'+p.id+'">Aggiungi esame</button></div>'
+    + '<div class="timeline">'+(ss.length ? ss.map(sampRow).join('') : '<div class="empty">Nessun esame registrato.</div>')+'</div>'
+    + '<div class="btn-row" style="justify-content:flex-end">'+free+'</div>'
+    + '</div>';
+}
+
+/* ---------- render ---------- */
+function render(){
+  const pend = db.samples.filter(s => isPos(s) && s.status === 'pending' && patientOf(s.pid)).length;
+  const sigP = new Set(db.samples.filter(s => isPos(s) && s.status === 'confirmed' && s.cat === 'sig').map(s => s.pid)).size;
+  const mdroP = new Set(db.samples.filter(s => isMdro(s) && patientOf(s.pid)).map(s => s.pid)).size;
+  const isoP = db.patients.filter(p => p.iso).length;
+  $('#stats').innerHTML =
+    '<button type="button" class="stat pend" data-action="tab" data-tab="queue"><b>'+pend+'</b>da rivedere</button>'
+  + '<button type="button" class="stat sig" data-action="tab" data-tab="beds"><b>'+sigP+'</b>pazienti con positività significative</button>'
+  + '<button type="button" class="stat mdro" data-action="tab" data-tab="mdro"><b>'+mdroP+'</b>pazienti con MDRO</button>'
+  + '<button type="button" class="stat iso" data-action="tab" data-tab="mdro"><b>'+isoP+'</b>in isolamento</button>';
+
+  const tabs = [['beds','Letti'],['queue','Da rivedere'],['mdro','MDRO e isolamenti']];
+  $('#tabs').innerHTML = tabs.map(t => '<button type="button" class="tab" data-action="tab" data-tab="'+t[0]+'" aria-current="'+(ui.tab===t[0])+'">'+t[1]+(t[0]==='queue'&&pend?'<span class="n">'+pend+'</span>':'')+'</button>').join('');
+
+  let html;
+  if(ui.tab === 'beds'){
+    html = '<div class="beds">'+Array.from({length:BEDS},(_,i)=>bedCard(i+1)).join('')+'</div>';
+  } else if(ui.tab === 'queue'){
+    html = queueHTML();
+  } else {
+    html = mdroHTML();
+  }
+  $('#list').innerHTML = html;
+
+  const p = ui.pid && patientOf(ui.pid);
+  const det = $('#detail');
+  if(p){ det.hidden = false; det.innerHTML = detailHTML(p); }
+  else { det.hidden = true; det.innerHTML = ''; ui.pid = null; }
+  $('#layout').classList.toggle('has-detail', !!p);
+}
+
+/* ---------- modal: nuovo esame ---------- */
+function opts(list, sel, labelFn){ return list.map(v => '<option value="'+esc(v)+'"'+(v===sel?' selected':'')+'>'+esc(labelFn?labelFn(v):v)+'</option>').join(''); }
+
+function openSampleModal(pid){
+  if(!db.patients.length){ alert('Assegna prima un paziente a un letto libero.'); return; }
+  const pts = db.patients.slice().sort((a,b) => a.bed-b.bed);
+  const sel = pid || ui.pid || pts[0].id;
+  $('#modal').innerHTML =
+    '<div class="backdrop" data-action="close-modal"></div>'
+  + '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">'
+  + '<div class="m-head"><h2 id="mt">Nuovo esame microbiologico</h2><button type="button" class="btn small" data-action="close-modal">Chiudi</button></div>'
+  + '<div class="m-body">'
+  + '<label class="fld">Paziente<select id="f-pid">'+pts.map(p => '<option value="'+p.id+'"'+(p.id===sel?' selected':'')+'>Letto '+p.bed+', '+esc(p.code)+'</option>').join('')+'</select></label>'
+  + '<label class="fld">Data del prelievo<input type="date" id="f-date" value="'+todayISO+'" max="'+todayISO+'"></label>'
+  + '<label class="fld">Esito<select id="f-result"><option value="pos">Positivo</option><option value="neg">Negativo</option><option value="pending">In corso</option></select></label>'
+  + '<label class="fld">Tipo di campione<select id="f-site">'+opts(SITES,'Sangue')+'</select></label>'
+  + '<label class="fld">Esame<select id="f-test">'+opts(TESTS,'Colturale')+'</select></label>'
+  + '<label class="fld" data-pos>Germe o reperto<input type="text" id="f-org" list="orgs" placeholder="es. Klebsiella pneumoniae" autocomplete="off"></label>'
+  + '<datalist id="orgs">'+ORGS.map(o => '<option value="'+esc(o)+'">').join('')+'</datalist>'
+  + '<label class="fld" data-neg hidden>Cosa è stato richiesto<input type="text" id="f-label" placeholder="es. Pannello meningoencefalite"></label>'
+  + '<label class="fld" data-sets>Set positivi<input type="number" id="f-sp" min="0" max="8" value="1"></label>'
+  + '<label class="fld" data-sets>Set totali<input type="number" id="f-st" min="1" max="8" value="2"></label>'
+  + '<label class="fld" data-cfu hidden>Carica (UFC/ml o UFC)<input type="number" id="f-cfu" min="0" placeholder="es. 100000"></label>'
+  + '<label class="fld" data-pos>Profilo di resistenza<select id="f-mdro">'+opts(MDROS,'',v=>v||'Nessun MDRO')+'</select></label>'
+  + '<label class="fld full" data-pos>Antibiogramma sintetico<input type="text" id="f-ab" placeholder="es. Meropenem R, colistina S"></label>'
+  + '<label class="check full" data-pos><input type="checkbox" id="f-clin"><span>Sospetto clinico di infezione (febbre, aumento indici di flogosi, segni nel sito, nuova terapia antibiotica)</span></label>'
+  + '<div class="full preview" id="f-prev" aria-live="polite" data-pos></div>'
+  + '</div>'
+  + '<div class="m-foot"><p class="err" id="f-err" role="alert"></p><button type="button" class="btn" data-action="close-modal">Annulla</button><button type="button" class="btn primary" data-action="save-sample">Salva esame</button></div>'
+  + '</div>';
+  syncForm();
+  $('#f-org').focus();
+}
+
+function readForm(){
+  return {
+    pid:$('#f-pid').value, date:$('#f-date').value || todayISO, result:$('#f-result').value, site:$('#f-site').value, test:$('#f-test').value,
+    org:$('#f-org').value.trim(), label:$('#f-label').value.trim(),
+    setsPos:$('#f-sp').value === '' ? null : +$('#f-sp').value, setsTot:$('#f-st').value === '' ? null : +$('#f-st').value,
+    cfu:$('#f-cfu').value === '' ? null : +$('#f-cfu').value, mdro:$('#f-mdro').value, ab:$('#f-ab').value.trim(), clinical:$('#f-clin').checked
+  };
+}
+
+function syncForm(){
+  const f = readForm(), pos = f.result === 'pos';
+  document.querySelectorAll('#modal [data-pos]').forEach(e => e.hidden = !pos);
+  document.querySelectorAll('#modal [data-neg]').forEach(e => e.hidden = pos);
+  document.querySelectorAll('#modal [data-sets]').forEach(e => e.hidden = !(pos && f.site === 'Sangue'));
+  document.querySelectorAll('#modal [data-cfu]').forEach(e => e.hidden = !(pos && ['BAL','Aspirato tracheale','Urine','Punta di CVC'].includes(f.site)));
+  const box = $('#f-prev');
+  if(pos){
+    if(!f.org){ box.innerHTML = '<span class="muted">Indica il germe o il reperto per vedere la proposta di classificazione.</span>'; return; }
+    const sg = suggest(Object.assign({}, f, {cfu: f.cfu}));
+    box.innerHTML = '<strong>Proposta del sistema</strong><div>'+chip(sg.cat)+'</div><span class="muted">'+esc(sg.reason)+'</span><span class="muted">La proposta va confermata da un medico nella coda "Da rivedere".</span>';
+  }
+}
+
+function saveSample(){
+  const f = readForm(), err = $('#f-err');
+  if(!f.pid){ err.textContent = 'Seleziona un paziente.'; return; }
+  if(f.result === 'pos'){
+    if(!f.org){ err.textContent = 'Indica il germe o il reperto.'; return; }
+    if(f.site === 'Sangue' && (f.setsPos == null || f.setsTot == null || f.setsPos < 1 || f.setsTot < f.setsPos)){ err.textContent = 'Controlla i set: i positivi devono essere almeno 1 e non più dei totali.'; return; }
+  } else {
+    f.org = ''; f.mdro = ''; f.ab = ''; f.clinical = false; f.setsPos = f.setsTot = f.cfu = null;
+    if(!f.label) f.label = f.result === 'neg' ? 'Nessun germe isolato' : 'Risultato atteso';
+  }
+  if(f.site !== 'Sangue'){ f.setsPos = f.setsTot = null; }
+  db.samples.push(mk(f));
+  ui.pid = f.pid;
+  closeModal();
+  render();
+}
+
+function openAdmitModal(bed){
+  $('#modal').innerHTML =
+    '<div class="backdrop" data-action="close-modal"></div>'
+  + '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">'
+  + '<div class="m-head"><h2 id="mt">Assegna paziente al letto '+bed+'</h2><button type="button" class="btn small" data-action="close-modal">Chiudi</button></div>'
+  + '<div class="m-body">'
+  + '<label class="fld full">Codice paziente (non usare nome e cognome)<input type="text" id="a-code" placeholder="es. TI-0440" autocomplete="off"></label>'
+  + '<label class="fld">Età<input type="number" id="a-age" min="0" max="120"></label>'
+  + '<label class="fld">Sesso<select id="a-sex"><option>F</option><option>M</option></select></label>'
+  + '<label class="fld full">Quadro clinico<input type="text" id="a-sum" placeholder="es. Polmonite grave, ventilazione meccanica"></label>'
+  + '</div>'
+  + '<div class="m-foot"><p class="err" id="a-err" role="alert"></p><button type="button" class="btn" data-action="close-modal">Annulla</button><button type="button" class="btn primary" data-action="save-admit" data-bed="'+bed+'">Assegna</button></div>'
+  + '</div>';
+  $('#a-code').focus();
+}
+
+function saveAdmit(bed){
+  const code = $('#a-code').value.trim(), age = +$('#a-age').value, err = $('#a-err');
+  if(!code){ err.textContent = 'Inserisci un codice paziente.'; return; }
+  if(!age){ err.textContent = 'Inserisci l\'età.'; return; }
+  if(db.patients.some(p => p.code.toLowerCase() === code.toLowerCase())){ err.textContent = 'Esiste già un paziente con questo codice.'; return; }
+  const p = {id:'p'+(uid++), bed:+bed, code, age, sex:$('#a-sex').value, admitted:todayISO, summary:$('#a-sum').value.trim() || 'Quadro clinico non indicato', dx:'', iso:null, nodx:false};
+  db.patients.push(p);
+  ui.pid = p.id; ui.tab = 'beds';
+  closeModal(); render();
+}
+
+function closeModal(){ $('#modal').innerHTML = ''; }
+
+/* ---------- azioni ---------- */
+function confirmSample(sid, cat){
+  const s = db.samples.find(x => x.id === sid); if(!s) return;
+  s.status = 'confirmed'; s.cat = cat; s.by = db.operator.trim() || 'Operatore'; s.at = todayISO;
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-action]'); if(!t) return;
+  const a = t.dataset.action;
+  if(a === 'tab'){ ui.tab = t.dataset.tab; render(); }
+  else if(a === 'select'){ ui.pid = t.dataset.pid; ui.confirmFree = null; render(); }
+  else if(a === 'close-detail'){ ui.pid = null; ui.confirmFree = null; render(); }
+  else if(a === 'confirm'){ confirmSample(t.dataset.sid, t.dataset.cat); render(); }
+  else if(a === 'reopen'){ const s = db.samples.find(x => x.id === t.dataset.sid); if(s){ s.status = 'pending'; s.cat = null; s.by = ''; s.at = ''; } render(); }
+  else if(a === 'iso-start'){
+    const p = patientOf(t.dataset.pid); if(!p) return;
+    const m = samplesOf(p.id).find(isMdro);
+    p.iso = {type:t.dataset.type, since:todayISO, reason: m ? (m.mdro + (m.org ? ' ('+m.org+')' : '')) : 'Motivo non indicato'};
+    render();
+  }
+  else if(a === 'iso-stop'){ const p = patientOf(t.dataset.pid); if(p) p.iso = null; render(); }
+  else if(a === 'toggle-nodx'){ const p = patientOf(t.dataset.pid); if(p) p.nodx = !p.nodx; render(); }
+  else if(a === 'free-ask'){ ui.confirmFree = t.dataset.pid; render(); }
+  else if(a === 'free-no'){ ui.confirmFree = null; render(); }
+  else if(a === 'free-yes'){
+    const id = t.dataset.pid;
+    db.patients = db.patients.filter(p => p.id !== id);
+    db.samples = db.samples.filter(s => s.pid !== id);
+    ui.pid = null; ui.confirmFree = null; render();
+  }
+  else if(a === 'new-sample'){ openSampleModal(ui.pid); }
+  else if(a === 'add-sample'){ openSampleModal(t.dataset.pid); }
+  else if(a === 'admit'){ openAdmitModal(t.dataset.bed); }
+  else if(a === 'save-sample'){ saveSample(); }
+  else if(a === 'save-admit'){ saveAdmit(t.dataset.bed); }
+  else if(a === 'close-modal'){ closeModal(); }
+  else if(a === 'export'){
+    const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const l = document.createElement('a'); l.href = url; l.download = 'microbiologia-ti-'+todayISO+'.json';
+    document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+  else if(a === 'import'){ $('#import-file').click(); }
+});
+
+document.addEventListener('input', e => { if(e.target.closest('#modal') && $('#f-prev')) syncForm(); });
+document.addEventListener('change', e => { if(e.target.closest('#modal') && $('#f-prev')) syncForm(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && $('#modal').innerHTML) closeModal(); });
+
+$('#operator').addEventListener('input', e => { db.operator = e.target.value; });
+$('#import-file').addEventListener('change', e => {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const d = JSON.parse(r.result);
+      if(!Array.isArray(d.patients) || !Array.isArray(d.samples)) throw new Error('formato');
+      db = d; db.operator = db.operator || '';
+      $('#operator').value = db.operator;
+      ui.pid = null; ui.tab = 'beds'; render();
+    } catch(err){ alert('File non valido: usa un file esportato da questa app.'); }
+    e.target.value = '';
+  };
+  r.readAsText(file);
+});
+
+render();
+})();
+</script>
+</body>
+</html>

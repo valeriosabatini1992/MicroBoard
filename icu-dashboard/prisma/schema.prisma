@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Enums converted to Strings for SQLite compatibility during local MVP test
+model Patient {
+  id                  String    @id @default(uuid())
+  patientCode         String    
+  bed                 String    
+  admissionStatus     String    @default("Attivo")
+  mainInfectiousFocus String?
+  diagnosis           String?
+  isolationType       String    @default("NONE") // NONE, CONTACT, DROPLET, AIRBORNE
+  episodeStartDate    DateTime?
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  antibiotics         Antibiotic[]
+  microbiologies      Microbiology[]
+  episodes            InfectiousEpisode[]
+  patientDevices      PatientDevice[]
+}
+
+model PatientDevice {
+  id                  String    @id @default(uuid())
+  patientId           String
+  patient             Patient   @relation(fields: [patientId], references: [id])
+  type                String
+  insertionDate       DateTime
+  removalDate         DateTime?
+}
+
+model Antibiotic {
+  id                  String    @id @default(uuid())
+  patientId           String
+  patient             Patient   @relation(fields: [patientId], references: [id])
+  
+  name                String
+  antibioticClass     String?
+  clinicalIndication  String?
+  prescriptionReason  String?
+  
+  startDate           DateTime
+  plannedEndDate      DateTime?
+  durationDays        Int?
+  status              String    @default("ACTIVE") // ACTIVE, SUSPENDED, COMPLETED
+  therapyType         String    // EMPIRIC, TARGETED, ESCALATION, DE_ESCALATION
+  notes               String?
+
+  linkedMicrobiologies AntibioticMicrobiologyLink[]
+  therapyReviews       TherapyReview[]
+}
+
+model AntibioticMicrobiologyLink {
+  antibioticId      String
+  microbiologyId    String
+  rationale         String?
+
+  antibiotic        Antibiotic   @relation(fields: [antibioticId], references: [id])
+  microbiology      Microbiology @relation(fields: [microbiologyId], references: [id])
+
+  @@id([antibioticId, microbiologyId])
+}
+
+model TherapyReview {
+  id                String    @id @default(uuid())
+  antibioticId      String
+  antibiotic        Antibiotic @relation(fields: [antibioticId], references: [id])
+  
+  reviewDate        DateTime
+  status            String    // PENDING, COMPLETED, OVERDUE
+  recommendation    String?
+  notes             String?
+}
+
+model Microbiology {
+  id                  String    @id @default(uuid())
+  patientId           String
+  patient             Patient   @relation(fields: [patientId], references: [id])
+  
+  sampleType          String    
+  sampleDate          DateTime
+  reportDate          DateTime?
+  microorganism       String
+  site                String?
+  resistanceProfile   String    @default("NON_MDR") // NON_MDR, MDR, XDR, PDR
+  clinicalSignificance String    @default("UNCERTAIN") // ACTIVE_INFECTION, COLONIZATION, CONTAMINATION, UNCERTAIN
+  comment             String?
+
+  linkedAntibiotics   AntibioticMicrobiologyLink[]
+  antibiogram         Antibiogram[]
+}
+
+model Antibiogram {
+  id                String       @id @default(uuid())
+  microbiologyId    String
+  microbiology      Microbiology @relation(fields: [microbiologyId], references: [id])
+  
+  antibioticName    String
+  interpretation    String       
+  micValue          String?
+}
+
+model InfectiousEpisode {
+  id                  String    @id @default(uuid())
+  patientId           String
+  patient             Patient   @relation(fields: [patientId], references: [id])
+  
+  type                String
+  startDate           DateTime
+  status              String    @default("ACTIVE") // ACTIVE, RESOLVED
+  severity            String?
+  notes               String?
+}

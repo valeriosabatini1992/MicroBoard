@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICU Infectious Dashboard - Mockup</title>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+          --bg-color: #f0f2f5;
+          --card-bg: #ffffff;
+          --text-primary: #1e293b;
+          --text-secondary: #475569;
+          --border-color: #e2e8f0;
+          
+          --semantic-red: #ef4444;
+          --semantic-red-bg: #fef2f2;
+          --semantic-yellow: #f59e0b;
+          --semantic-yellow-bg: #fffbeb;
+          --semantic-green: #10b981;
+          --semantic-green-bg: #ecfdf5;
+          --semantic-blue: #3b82f6;
+          --semantic-blue-bg: #eff6ff;
+          --semantic-gray: #94a3b8;
+          --semantic-gray-bg: #f8fafc;
+          
+          --badge-mdr: #7f1d1d;
+          --badge-mdr-bg: #fca5a5;
+          --badge-isolation: #9a3412;
+          --badge-isolation-bg: #ffedd5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --border-color: #334155;
+            
+            --semantic-red-bg: rgba(239, 68, 68, 0.15);
+            --semantic-yellow-bg: rgba(245, 158, 11, 0.15);
+            --semantic-green-bg: rgba(16, 185, 129, 0.15);
+            --semantic-blue-bg: rgba(59, 130, 246, 0.15);
+            --semantic-gray-bg: rgba(148, 163, 184, 0.15);
+            
+            --badge-mdr: #fca5a5;
+            --badge-mdr-bg: rgba(127, 29, 29, 0.5);
+            --badge-isolation: #fdba74;
+            --badge-isolation-bg: rgba(154, 52, 18, 0.5);
+          }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: 'Inter', -apple-system, sans-serif;
+          background-color: var(--bg-color);
+          color: var(--text-primary);
+          line-height: 1.4;
+          font-size: 14px;
+        }
+
+        h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.2; }
+
+        .dashboard-container { max-width: 1600px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+        .kpi-header { display: flex; gap: 12px; flex-wrap: wrap; }
+        .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 6px; flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
+        .kpi-card .kpi-val { font-size: 20px; font-weight: 700; }
+        .kpi-card .kpi-label { font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+
+        .patient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+        .patient-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; transition: border-color 0.15s ease; }
+        .patient-card:hover { border-color: var(--semantic-blue); }
+
+        .patient-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.02); }
+        .patient-id { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+        .patient-bed { font-size: 12px; background: var(--border-color); padding: 2px 6px; border-radius: 4px; }
+
+        .patient-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+        .badge-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px; }
+        .badge.isolation { background: var(--badge-isolation-bg); color: var(--badge-isolation); }
+        .badge.mdr { background: var(--badge-mdr-bg); color: var(--badge-mdr); }
+
+        .info-row { display: flex; justify-content: space-between; font-size: 13px; }
+        .info-label { color: var(--text-secondary); }
+        .info-value { font-weight: 500; }
+
+        .abx-list { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+        .abx-item { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--bg-color); border-radius: 4px; border-left: 3px solid var(--semantic-blue); }
+        .abx-item.urgent-review { border-left-color: var(--semantic-yellow); background: var(--semantic-yellow-bg); }
+        .abx-item.overdue { border-left-color: var(--semantic-red); background: var(--semantic-red-bg); }
+
+        .expand-btn { width: 100%; padding: 6px; background: none; border: none; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 12px; cursor: pointer; text-align: center; }
+        .expand-btn:hover { background: var(--bg-color); color: var(--text-primary); }
+
+        .expanded-panel { padding: 16px; border-top: 1px solid var(--border-color); background: var(--bg-color); display: grid; grid-template-columns: 1fr 1fr; gap: 16px; display: none; }
+        .patient-card.expanded .expanded-panel { display: grid; }
+        
+        .timeline { display: flex; flex-direction: column; gap: 8px; position: relative; padding-left: 12px; border-left: 2px solid var(--border-color); }
+        .timeline-event { position: relative; padding: 8px; background: var(--card-bg); border-radius: 4px; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .timeline-event::before { content: ""; position: absolute; left: -17px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--semantic-gray); }
+        .timeline-event.event-micro::before { background: var(--semantic-blue); }
+        .timeline-event.event-abx::before { background: var(--semantic-green); }
+        .timeline-event.event-alert::before { background: var(--semantic-red); }
+
+        .timeline-date { font-weight: 600; color: var(--text-secondary); font-size: 11px; margin-bottom: 2px; }
+
+        .btn { padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--text-primary); color: var(--card-bg); }
+        .btn-outline { background: transparent; border-color: var(--border-color); color: var(--text-primary); }
+
+        @media print {
+          body { background: #fff; color: #000; font-size: 12px; }
+          .dashboard-container { padding: 0; }
+          .kpi-header, .btn, .expand-btn, nav { display: none !important; }
+          .patient-card { border: none; border-bottom: 1px solid #ccc; break-inside: avoid; margin-bottom: 16px; }
+          .expanded-panel { display: block; border: none; background: #fff; }
+          .timeline { border-left-color: #000; }
+          .badge { border: 1px solid #000; color: #000 !important; background: #fff !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div>
+                <h1 style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="activity" style="color: var(--semantic-blue)"></i>
+                    ICU Infectious Dashboard
+                </h1>
+                <p style="color: var(--text-secondary)">Radar Infettivologico Dinamico (Static Mockup)</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" onclick="window.print()">
+                    <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Stampa Report
+                </button>
+                <button class="btn btn-primary">
+                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i> Nuovo Paziente
+                </button>
+            </div>
+        </header>
+
+        <div class="kpi-header">
+            <div class="kpi-card"><span class="kpi-label">Pazienti Attivi</span><span class="kpi-val">5</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--badge-isolation);"><span class="kpi-label">In Isolamento</span><span class="kpi-val">3</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--badge-mdr);"><span class="kpi-label">Pazienti MDR/XDR</span><span class="kpi-val">3</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--semantic-blue);"><span class="kpi-label">Antibiotici Attivi</span><span class="kpi-val">7</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--semantic-yellow);"><span class="kpi-label">Review < 48h</span><span class="kpi-val" style="color: var(--semantic-yellow);">1</span></div>
+            <div class="kpi-card" style="border-left: 4px solid var(--semantic-red);"><span class="kpi-label">Review Scadute</span><span class="kpi-val" style="color: var(--semantic-red);">1</span></div>
+        </div>
+
+        <main class="patient-grid">
+            <!-- PAZIENTE 1 -->
+            <div class="patient-card" id="card-1">
+                <div class="patient-header">
+                    <div class="patient-id"><i data-lucide="user" style="width: 16px; height: 16px; color: var(--text-secondary);"></i> PAZ-003</div>
+                    <div class="patient-bed">L3</div>
+                </div>
+                <div class="patient-body">
+                    <div class="badge-row">
+                        <span class="badge isolation"><i data-lucide="shield-alert" style="width: 12px; height: 12px;"></i> ISO: CONTACT</span>
+                        <span class="badge mdr"><i data-lucide="bug" style="width: 12px; height: 12px;"></i> MDR/XDR</span>
+                        <span class="badge mdr" style="opacity: 0.8"><i data-lucide="bug" style="width: 12px; height: 12px;"></i> Col. Klebsiella</span>
+                    </div>
+                    <div class="info-row"><span class="info-label">Focus Infettivo:</span><span class="info-value">Polmonare + Batteriemia CVC</span></div>
+                    
+                    <div class="abx-list">
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px;">TERAPIA IN CORSO</div>
+                        <div class="abx-item">
+                            <div><strong>Ampicillina</strong> <span style="color: var(--text-secondary)">(TARGETED)</span>
+                                <div style="font-size: 10px; color: var(--semantic-blue); margin-top: 2px; display: flex; align-items: center; gap: 4px;"><i data-lucide="beaker" style="width: 10px; height: 10px;"></i> Mirata su referto</div>
+                            </div>
+                            <span style="font-size: 11px; white-space: nowrap;">Fine tra 6gg</span>
+                        </div>
+                        <div class="abx-item urgent-review">
+                            <div><strong>Meropenem</strong> <span style="color: var(--text-secondary)">(EMPIRIC)</span></div>
+                            <span style="font-size: 11px; white-space: nowrap;">Review tra 48h</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="expanded-panel">
+                    <div>
+                        <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i data-lucide="activity" style="width: 14px; height: 14px;"></i> Riconciliazione & Dettagli</h4>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div><strong>Diagnosi:</strong> VAP + CRBSI</div>
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                                <h5 style="margin-bottom: 8px;">Microbiologia</h5>
+                                <div style="padding: 6px; background: rgba(0,0,0,0.02); border-radius: 4px; margin-bottom: 6px;">
+                                    <strong>Emocoltura CVC</strong> - 20/05/2026<br/>
+                                    <span>Enterococcus faecalis</span> (ACTIVE_INFECTION)
+                                </div>
+                                <div style="padding: 6px; background: rgba(0,0,0,0.02); border-radius: 4px; margin-bottom: 6px;">
+                                    <strong>Tampone Rettale</strong> - 18/05/2026<br/>
+                                    <span style="color: var(--semantic-red);">Klebsiella pneumoniae (KPC)</span> (COLONIZATION)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i data-lucide="clock" style="width: 14px; height: 14px;"></i> Timeline Clinica</h4>
+                        <div class="timeline">
+                            <div class="timeline-event event-abx"><div class="timeline-date">21 Mag 2026</div><div>Inizio Ampicillina (TARGETED)</div></div>
+                            <div class="timeline-event event-micro"><div class="timeline-date">20 Mag 2026</div><div>Referto: E. faecalis</div></div>
+                            <div class="timeline-event event-abx"><div class="timeline-date">17 Mag 2026</div><div>Inizio Meropenem (EMPIRIC)</div></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="expand-btn" onclick="document.getElementById('card-1').classList.toggle('expanded')">Espandi Dettagli</button>
+            </div>
+            
+            <!-- PAZIENTE 2 -->
+            <div class="patient-card" id="card-2">
+                <div class="patient-header">
+                    <div class="patient-id"><i data-lucide="user" style="width: 16px; height: 16px; color: var(--text-secondary);"></i> PAZ-005</div>
+                    <div class="patient-bed">L5</div>
+                </div>
+                <div class="patient-body">
+                    <div class="badge-row">
+                        <span class="badge isolation"><i data-lucide="shield-alert" style="width: 12px; height: 12px;"></i> ISO: CONTACT</span>
+                        <span class="badge mdr"><i data-lucide="bug" style="width: 12px; height: 12px;"></i> MDR/XDR</span>
+                        <span class="badge mdr" style="opacity: 0.8"><i data-lucide="bug" style="width: 12px; height: 12px;"></i> Col. Staphylococcus</span>
+                    </div>
+                    <div class="info-row"><span class="info-label">Focus Infettivo:</span><span class="info-value">Endovascolare</span></div>
+                    
+                    <div class="abx-list">
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px;">TERAPIA IN CORSO</div>
+                        <div class="abx-item overdue">
+                            <div><strong>Daptomicina</strong> <span style="color: var(--text-secondary)">(TARGETED)</span>
+                                <div style="font-size: 10px; color: var(--semantic-blue); margin-top: 2px; display: flex; align-items: center; gap: 4px;"><i data-lucide="beaker" style="width: 10px; height: 10px;"></i> Mirata su referto</div>
+                            </div>
+                            <span style="font-size: 11px; white-space: nowrap;">Scaduta</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="expanded-panel">
+                    <div>
+                        <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i data-lucide="activity" style="width: 14px; height: 14px;"></i> Riconciliazione & Dettagli</h4>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div><strong>Diagnosi:</strong> Endocardite MRSA</div>
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
+                                <h5 style="margin-bottom: 8px;">Microbiologia</h5>
+                                <div style="padding: 6px; background: rgba(0,0,0,0.02); border-radius: 4px; margin-bottom: 6px;">
+                                    <strong>Emocoltura CVC</strong> - 14/05/2026<br/>
+                                    <span style="color: var(--semantic-red);">Staphylococcus aureus (MRSA)</span> (ACTIVE_INFECTION)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i data-lucide="clock" style="width: 14px; height: 14px;"></i> Timeline Clinica</h4>
+                        <div class="timeline">
+                            <div class="timeline-event event-alert"><div class="timeline-date">20 Mag 2026</div><div>Review: OVERDUE</div></div>
+                            <div class="timeline-event event-micro"><div class="timeline-date">16 Mag 2026</div><div>Referto: MRSA (ACTIVE_INFECTION)</div></div>
+                            <div class="timeline-event event-abx"><div class="timeline-date">16 Mag 2026</div><div>Inizio Daptomicina (TARGETED)</div></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="expand-btn" onclick="document.getElementById('card-2').classList.toggle('expanded')">Espandi Dettagli</button>
+            </div>
+
+        </main>
+    </div>
+    
+    <script>
+      lucide.createIcons();
+    </script>
+</body>
+</html>
