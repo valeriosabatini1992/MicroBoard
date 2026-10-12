@@ -12,7 +12,14 @@ export const ago = (n: number) => {
 };
 
 export const fmt = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+export const fmtDMY = (s: string) => {
+  if (!s) return '';
+  const d = new Date(s + 'T12:00:00');
+  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
 export const daysSince = (s: string) => Math.max(0, Math.round((new Date(todayISO + 'T12:00:00').getTime() - new Date(s + 'T12:00:00').getTime()) / 864e5));
+
+export const isPendingCulture = (s: Sample) => s.result === 'pending' && (s.test === 'Colturale' || !s.test || s.test.toLowerCase().includes('coltur'));
 
 export const LABEL: Record<string, string> = { sig: '🔴 Infezione', col: '🟡 Colonizzazione', con: '⚪ Contaminazione', val: '🔵 Incerto' };
 export const SHORT: Record<string, string> = { sig: '🔴 Infezione', col: '🟡 Colonizzazione', con: '⚪ Contaminazione' };

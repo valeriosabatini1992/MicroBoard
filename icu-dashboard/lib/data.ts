@@ -54,6 +54,7 @@ export const seed: DB = {
   samples: [
     mk({pid:'p1', date:ago(3), site:'Liquor', test:'Colturale', org:'Streptococcus pneumoniae', ab:'Penicillina S, ceftriaxone S', ...conf('sig',ago(3))}),
     mk({pid:'p1', date:ago(3), site:'Sangue', test:'Colturale', org:'Streptococcus pneumoniae', setsPos:2, setsTot:2, ab:'Penicillina S, ceftriaxone S', ...conf('sig',ago(3))}),
+    mk({pid:'p1', date:ago(1), site:'Sangue', test:'Colturale', result:'pending', label:'Emocoltura di controllo (T+24h)'}),
     mk({pid:'p1', date:ago(3), site:'Urine', test:'Antigene', org:'Antigene urinario pneumococco', ...conf('sig',ago(3))}),
     mk({pid:'p2', date:ago(8), site:'Liquor', test:'PCR/biologia molecolare', result:'neg', label:'HSV, VZV, enterovirus'}),
     mk({pid:'p2', date:ago(5), site:'Siero', test:'Sierologia', org:'West Nile virus (IgM)', ...conf('sig',ago(5))}),
@@ -66,14 +67,17 @@ export const seed: DB = {
     mk({pid:'p3', date:ago(4), site:'Liquor', test:'Sierologia', result:'pending', label:'Anticorpi anti-neuronali'}),
     mk({pid:'p3', date:ago(2), site:'Aspirato tracheale', test:'Colturale', org:'Candida albicans', ...conf('col',ago(1))}),
     mk({pid:'p4', date:ago(6), site:'BAL', test:'Colturale', org:'Pseudomonas aeruginosa', cfu:1e5, mdro:'Pseudomonas CR', ab:'Meropenem R, ceftazidime R, colistina S', clinical:true, ...conf('sig',ago(6))}),
+    mk({pid:'p4', date:ago(0), site:'Tampone rettale', test:'Colturale', result:'pending', label:'Sorveglianza CRE'}),
     mk({pid:'p5', date:ago(15), site:'Tampone rettale', test:'Colturale', org:'Klebsiella pneumoniae KPC', mdro:'CRE/CPE', ab:'Meropenem R, colistina S', ...conf('col',ago(15))}),
     mk({pid:'p5', date:ago(4), site:'Sangue', test:'Colturale', org:'Staphylococcus epidermidis', setsPos:1, setsTot:4, ...conf('con',ago(4))}),
     mk({pid:'p6', date:ago(7), site:'Tampone nasale', test:'Colturale', org:'Staphylococcus aureus MRSA', mdro:'MRSA', ...conf('col',ago(7))}),
     mk({pid:'p6', date:ago(2), site:'Urine', test:'Colturale', org:'Candida albicans', cfu:1e5}),
     mk({pid:'p7', date:ago(1), site:'Sangue', test:'Colturale', org:'Escherichia coli', setsPos:2, setsTot:2, mdro:'ESBL', ab:'Ceftriaxone R, piperacillina/tazobactam R, meropenem S'}),
+    mk({pid:'p7', date:ago(1), site:'Liquido peritoneale', test:'Colturale', result:'pending', label:'Coltura liquido da drenaggio'}),
     mk({pid:'p8', date:ago(4), site:'Sangue', test:'Colturale', org:'Staphylococcus aureus (MSSA)', setsPos:2, setsTot:2, ab:'Oxacillina S, vancomicina S', ...conf('sig',ago(4))}),
     mk({pid:'p8', date:ago(4), site:'Punta di CVC', test:'Colturale', org:'Staphylococcus aureus (MSSA)', cfu:15, note:'Concordante con emocoltura', ...conf('sig',ago(3))}),
     mk({pid:'p9', date:ago(1), site:'Aspirato tracheale', test:'Colturale', org:'Staphylococcus aureus (MSSA)', cfu:1e6, ab:'Oxacillina S'}),
+    mk({pid:'p9', date:ago(0), site:'BAL', test:'Colturale', result:'pending', label:'Coltura quantitativa BAL'}),
     mk({pid:'p10', date:ago(6), site:'Urine', test:'Colturale', org:'Enterococcus faecalis', cfu:1e4, ...conf('col',ago(6))}),
     mk({pid:'p10', date:ago(3), site:'Feci', test:'Tossina', org:'Clostridioides difficile (tossina A/B)', clinical:true, ...conf('sig',ago(3))})
   ]

@@ -22,6 +22,7 @@ interface DashboardContextType {
   toggleNodx: (pid: string) => void;
   freeBed: (pid: string) => void;
   addSample: (sample: Sample) => void;
+  updateSample: (sid: string, updates: Partial<Sample>) => void;
   addPatient: (patient: Patient) => void;
   exportData: () => void;
   importData: (db: DB) => void;
@@ -127,6 +128,15 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     updateUi({ pid: sample.pid });
   };
 
+  const updateSample = (sid: string, updates: Partial<Sample>) => {
+    updateDb(d => {
+      const s = d.samples.find(x => x.id === sid);
+      if (s) {
+        Object.assign(s, updates);
+      }
+    });
+  };
+
   const addPatient = (patient: Patient) => {
     updateDb(d => {
       d.patients.push(patient);
@@ -155,7 +165,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     <DashboardContext.Provider value={{
       db, ui, setTab, setPid, setConfirmFree, setOperator,
       confirmSample, reopenSample, startIsolation, stopIsolation,
-      toggleNodx, freeBed, addSample, addPatient, exportData, importData
+      toggleNodx, freeBed, addSample, updateSample, addPatient, exportData, importData
     }}>
       {children}
     </DashboardContext.Provider>

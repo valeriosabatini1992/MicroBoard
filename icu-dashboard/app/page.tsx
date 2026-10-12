@@ -4,8 +4,9 @@ import { DashboardProvider, useDashboard } from '@/lib/store';
 import { BedBoard } from '@/components/BedBoard';
 import { Queue } from '@/components/Queue';
 import { MdroList } from '@/components/MdroList';
-import { DetailSidebar } from '@/components/DetailSidebar';
+import { PatientDetailModal } from '@/components/PatientDetailModal';
 import { Modals } from '@/components/Modals';
+import { isPendingCulture } from '@/lib/logic';
 
 const Header = () => {
   const { db, setOperator, exportData, importData } = useDashboard();
@@ -59,14 +60,14 @@ const Header = () => {
 const Stats = () => {
   const { db, setTab } = useDashboard();
   
-  const pend = db.samples.filter(s => s.result === 'pos' && s.status === 'pending' && db.patients.find(p => p.id === s.pid)).length;
+  const pend = db.samples.filter(s => isPendingCulture(s) && db.patients.some(p => p.id === s.pid)).length;
   const sigP = new Set(db.samples.filter(s => s.result === 'pos' && s.status === 'confirmed' && s.cat === 'sig').map(s => s.pid)).size;
   const mdroP = new Set(db.samples.filter(s => s.result === 'pos' && s.mdro && !(s.status === 'confirmed' && s.cat === 'con') && db.patients.find(p => p.id === s.pid)).map(s => s.pid)).size;
   const isoP = db.patients.filter(p => p.iso).length;
 
   return (
     <section className="stats" aria-label="Riepilogo">
-      <button type="button" className="stat pend" onClick={() => setTab('queue')}><b>{pend}</b>da rivedere</button>
+      <button type="button" className="stat pend" onClick={() => setTab('queue')}><b>{pend}</b>colturali in corso</button>
       <button type="button" className="stat sig" onClick={() => setTab('beds')}><b>{sigP}</b>pazienti con infezioni</button>
       <button type="button" className="stat mdro" onClick={() => setTab('mdro')}><b>{mdroP}</b>pazienti con MDRO</button>
       <button type="button" className="stat iso" onClick={() => setTab('mdro')}><b>{isoP}</b>in isolamento</button>
@@ -76,7 +77,7 @@ const Stats = () => {
 
 const Tabs = () => {
   const { db, ui, setTab } = useDashboard();
-  const pend = db.samples.filter(s => s.result === 'pos' && s.status === 'pending' && db.patients.find(p => p.id === s.pid)).length;
+  const pend = db.samples.filter(s => isPendingCulture(s) && db.patients.some(p => p.id === s.pid)).length;
 
   const tabs = [
     { id: 'beds', label: 'Letti' },
@@ -111,14 +112,14 @@ const DashboardContent = () => {
       <Stats />
       <Tabs />
 
-      <div className={`layout ${ui.pid ? 'has-detail' : ''}`}>
+      <div className="layout">
         <main id="list">
           {ui.tab === 'beds' && <BedBoard />}
           {ui.tab === 'queue' && <Queue />}
           {ui.tab === 'mdro' && <MdroList />}
         </main>
-        <DetailSidebar />
       </div>
+      <PatientDetailModal />
       <Modals />
     </div>
   );
