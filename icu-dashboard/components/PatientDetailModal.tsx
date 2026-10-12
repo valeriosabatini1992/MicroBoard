@@ -1,9 +1,17 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useDashboard } from '@/lib/store';
-import { BEDS, fmt, fmtDMY, daysSince, LABEL, isPendingCulture } from '@/lib/logic';
+import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture } from '@/lib/logic';
 import { CatType, Sample } from '@/lib/types';
 import { Chip } from './DashboardComponents';
+
+const SHORT_CAT: Record<string, string> = {
+  sig: '🔴 Infezione',
+  col: '🟡 Col.',
+  con: '⚪ Cont.',
+  val: '🔵 Incerto',
+  pend: '⏳ In corso',
+};
 
 export const PatientDetailModal = () => {
   const { 
@@ -19,6 +27,7 @@ export const PatientDetailModal = () => {
     updateSample 
   } = useDashboard();
 
+  const [expandedSampleId, setExpandedSampleId] = useState<string | null>(null);
   const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
   const [quickOrg, setQuickOrg] = useState('');
   const [quickMdro, setQuickMdro] = useState('');
@@ -46,6 +55,13 @@ export const PatientDetailModal = () => {
 
   const getEffectiveCat = (s: Sample): CatType | 'pend' => {
     return s.status === 'confirmed' ? (s.cat as CatType) : 'pend';
+  };
+
+  const fmtShortDate = (s: string) => {
+    if (!s) return '';
+    const parts = s.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+    return s;
   };
 
   const handleQuickReferta = (sid: string) => {
@@ -95,8 +111,8 @@ export const PatientDetailModal = () => {
         aria-modal="true" 
         aria-labelledby="modal-patient-title"
       >
-        {/* Left Column: Rapid Bed Selector */}
-        <aside className="bed-quick-nav" aria-label="Elenco rapido letti">
+        {/* Left Column: Rapid Bed Selector (Desktop) */}
+        <aside className="bed-quick-nav desktop-only" aria-label="Elenco rapido letti">
           <div className="bed-nav-header">
             <h3>Letti T.I.</h3>
             <span className="muted" style={{ fontSize: '12px' }}>12 Letti</span>
@@ -125,7 +141,6 @@ export const PatientDetailModal = () => {
                 );
               }
 
-              // Check infections / status for indicator dot
               const pSamples = db.samples.filter(s => s.pid === p.id && s.result === 'pos');
               const hasSig = pSamples.some(s => getEffectiveCat(s) === 'sig');
               const hasCol = pSamples.some(s => getEffectiveCat(s) === 'col');
@@ -168,43 +183,39 @@ export const PatientDetailModal = () => {
         <section className="patient-modal-main">
           {currentPatient ? (
             <>
-              {/* Header Bar */}
+              {/* Ultra-Compact Top Bar */}
               <div className="p-modal-header">
                 <div className="p-modal-header-left">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    <h2 id="modal-patient-title" style={{ margin: 0, fontSize: '22px', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+                    <h2 id="modal-patient-title" className="p-modal-title">
                       Letto {currentPatient.bed}
                     </h2>
                     <span className="p-header-badge">{currentPatient.code}</span>
-                    <span className="muted" style={{ fontSize: '14px' }}>
-                      {currentPatient.age} anni, {currentPatient.sex} • Ricoverato il {fmtDMY(currentPatient.admitted)} (Giorno {daysSince(currentPatient.admitted) + 1})
+                    <span className="muted p-patient-meta">
+                      {currentPatient.age}a {currentPatient.sex} • Ricoverato {fmtShortDate(currentPatient.admitted)} (gg {daysSince(currentPatient.admitted) + 1})
                     </span>
-                  </div>
-                  <div style={{ marginTop: '4px', fontSize: '14px' }}>
-                    <strong>{currentPatient.summary}</strong>
-                    {currentPatient.dx && <span className="muted"> — {currentPatient.dx}</span>}
                   </div>
                 </div>
 
                 <div className="p-modal-header-actions">
                   <button 
                     type="button" 
-                    className="btn small primary"
+                    className="btn small primary p-btn-add"
                     onClick={() => {
                       document.dispatchEvent(new CustomEvent('open-sample-modal', { detail: { pid: currentPatient.id } }));
                     }}
+                    title="Nuovo esame"
                   >
-                    + Nuovo esame
+                    + Esame
                   </button>
 
                   {ui.confirmFree === currentPatient.id ? (
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <span className="muted" style={{ fontSize: '12px' }}>Sicuro?</span>
                       <button type="button" className="btn small danger" onClick={() => freeBed(currentPatient.id)}>Conferma</button>
                       <button type="button" className="btn small" onClick={() => setConfirmFree(null)}>Annulla</button>
                     </div>
                   ) : (
-                    <button type="button" className="btn small" onClick={() => setConfirmFree(currentPatient.id)}>Libera letto</button>
+                    <button type="button" className="btn small desktop-only" onClick={() => setConfirmFree(currentPatient.id)}>Libera</button>
                   )}
 
                   <button 
@@ -218,110 +229,150 @@ export const PatientDetailModal = () => {
                 </div>
               </div>
 
-              {/* Sub-Header: Isolation & Alert */}
-              <div className="p-modal-sub">
-                {needsIso && (
-                  <div className="alert" style={{ width: '100%', marginBottom: '8px' }}>
-                    <span><strong>⚠️ Germe MDRO rilevato senza isolamento attivo!</strong></span>
-                    <button type="button" className="btn small" onClick={() => startIsolation(currentPatient.id, 'Contatto')}>
-                      Avvia isolamento di contatto
-                    </button>
-                  </div>
-                )}
+              {/* Mobile Rapid Horizontal Bed Strip */}
+              <div className="mobile-bed-strip mobile-only" aria-label="Selettore rapido letti mobile">
+                {Array.from({ length: BEDS }, (_, i) => i + 1).map(bedNum => {
+                  const p = db.patients.find(x => x.bed === bedNum);
+                  const isSelected = currentPatient && currentPatient.bed === bedNum;
 
-                <div className="iso-compact-bar">
+                  if (!p) {
+                    return (
+                      <button
+                        key={`m-bed-${bedNum}`}
+                        type="button"
+                        className="m-bed-pill free"
+                        onClick={() => {
+                          document.dispatchEvent(new CustomEvent('open-admit-modal', { detail: { bed: bedNum } }));
+                        }}
+                      >
+                        L{bedNum}
+                      </button>
+                    );
+                  }
+
+                  const pSamples = db.samples.filter(s => s.pid === p.id && s.result === 'pos');
+                  const hasSig = pSamples.some(s => getEffectiveCat(s) === 'sig');
+                  const hasCol = pSamples.some(s => getEffectiveCat(s) === 'col');
+                  const hasPend = db.samples.some(s => s.pid === p.id && (isPendingCulture(s) || getEffectiveCat(s) === 'pend'));
+                  const dotColor = hasSig ? 'var(--sig)' : hasCol ? 'var(--col-b)' : hasPend ? 'var(--pend)' : 'var(--line-strong)';
+
+                  return (
+                    <button
+                      key={`m-bed-${bedNum}`}
+                      type="button"
+                      className={`m-bed-pill ${isSelected ? 'active' : ''}`}
+                      onClick={() => { setPid(p.id); setConfirmFree(null); }}
+                    >
+                      <span className="m-pill-dot" style={{ background: dotColor }} />
+                      L{bedNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Compact Diagnosis & Isolation Strip */}
+              <div className="p-modal-summary-bar">
+                <div className="p-summary-text">
+                  <strong>{currentPatient.summary}</strong>
+                  {currentPatient.dx && <span className="muted"> — {currentPatient.dx}</span>}
+                </div>
+
+                <div className="p-summary-tags">
+                  {needsIso && (
+                    <span className="mini-badge-alert" onClick={() => startIsolation(currentPatient.id, 'Contatto')}>
+                      ⚠️ MDRO senza isolamento!
+                    </span>
+                  )}
                   {currentPatient.iso ? (
-                    <div className="iso-box on" style={{ width: '100%', padding: '8px 12px' }}>
-                      <div>
-                        <strong>🛡️ Isolamento {currentPatient.iso.type.toLowerCase()}</strong>, giorno {daysSince(currentPatient.iso.since) + 1} (dal {fmtDMY(currentPatient.iso.since)})
-                        <span className="muted" style={{ marginLeft: '8px' }}>— {currentPatient.iso.reason}</span>
-                      </div>
-                      <button type="button" className="btn small" onClick={() => stopIsolation(currentPatient.id)}>Revoca</button>
-                    </div>
+                    <span className="mini-badge-iso" title={currentPatient.iso.reason}>
+                      🛡️ Isolam. {currentPatient.iso.type.toLowerCase()} (gg {daysSince(currentPatient.iso.since) + 1})
+                      <button type="button" className="btn-iso-revoke" onClick={() => stopIsolation(currentPatient.id)}>✕</button>
+                    </span>
                   ) : (
-                    <div className="iso-box" style={{ width: '100%', padding: '6px 12px' }}>
-                      <span className="muted" style={{ fontSize: '13.5px' }}>Nessun isolamento attivo</span>
-                      <div className="btn-row" style={{ margin: 0 }}>
-                        <span className="muted" style={{ fontSize: '13px' }}>Attiva:</span>
-                        {['Contatto', 'Droplet', 'Aereo'].map(t => (
-                          <button key={t} type="button" className="btn small" onClick={() => startIsolation(currentPatient.id, t)}>{t}</button>
-                        ))}
-                      </div>
+                    <div className="desktop-only" style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
+                      <span className="muted" style={{ fontSize: '11.5px' }}>Isolamento:</span>
+                      {['Contatto', 'Droplet'].map(t => (
+                        <button key={t} type="button" className="btn small" style={{ fontSize: '11px', padding: '1px 5px' }} onClick={() => startIsolation(currentPatient.id, t)}>{t}</button>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Main Table: Compact Single-Line Exam Records */}
+              {/* Main Body: Ultra-Dense Single-Line Exam Records */}
               <div className="p-modal-body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                <div className="exam-table-bar">
+                  <span style={{ fontWeight: 700, fontSize: '13px' }}>
                     Referti microbiologici ({ss.length})
-                  </h3>
-                  <span className="muted" style={{ fontSize: '13px' }}>
-                    Tutti i dati compattati su riga singola con classificazione rapida
+                  </span>
+                  <span className="muted" style={{ fontSize: '11.5px' }}>
+                    {ss.filter(s => getEffectiveCat(s) === 'sig').length} Infezioni • Tocca per dettagli
                   </span>
                 </div>
 
                 {ss.length > 0 ? (
-                  <div className="compact-exam-table-wrap">
-                    {/* Table Column Headers */}
-                    <div className="exam-row-header">
-                      <div className="c-col c-date">DATA</div>
-                      <div className="c-col c-site">SITO / CAMPIONE</div>
-                      <div className="c-col c-test">ESAME</div>
-                      <div className="c-col c-result">ESITO / MICRORGANISMO / ANTIBIOGRAMMA</div>
-                      <div className="c-col c-cat">INTERPRETAZIONE</div>
-                      <div className="c-col c-actions">AZIONI</div>
+                  <div className="dense-exam-container">
+                    {/* Header Row (Desktop only) */}
+                    <div className="dense-row-header desktop-only">
+                      <div className="d-col d-date">DATA</div>
+                      <div className="d-col d-site">SITO</div>
+                      <div className="d-col d-test">ESAME</div>
+                      <div className="d-col d-result">MICRORGANISMO / ESITO</div>
+                      <div className="d-col d-cat">INTERPRETAZIONE</div>
+                      <div className="d-col d-act">AZIONI</div>
                     </div>
 
-                    {/* Table Rows */}
-                    <div className="exam-row-list">
+                    {/* Exam List */}
+                    <div className="dense-row-list">
                       {ss.map(s => {
                         const isPending = s.result === 'pending';
                         const isNegative = s.result === 'neg';
                         const isPositive = s.result === 'pos';
                         const effectiveCat = getEffectiveCat(s);
-
-                        const rowClass = isPositive 
-                          ? `exam-row ${effectiveCat}` 
-                          : isNegative 
-                          ? 'exam-row neg' 
-                          : 'exam-row pend';
-
+                        const isExpanded = expandedSampleId === s.id;
                         const isEditingThis = editingSampleId === s.id;
 
+                        const rowClass = isPositive 
+                          ? `dense-row ${effectiveCat}` 
+                          : isNegative 
+                          ? 'dense-row neg' 
+                          : 'dense-row pend';
+
                         return (
-                          <div key={s.id} className="exam-row-container">
-                            <div className={rowClass}>
+                          <div key={s.id} className="dense-item-wrapper">
+                            <div 
+                              className={rowClass}
+                              onClick={() => setExpandedSampleId(isExpanded ? null : s.id)}
+                            >
                               {/* Date */}
-                              <div className="c-col c-date font-mono">
-                                {fmtDMY(s.date)}
+                              <div className="d-col d-date font-mono">
+                                <span className="desktop-only">{fmtDMY(s.date)}</span>
+                                <span className="mobile-only">{fmtShortDate(s.date)}</span>
                               </div>
 
                               {/* Site */}
-                              <div className="c-col c-site">
-                                <span className="site-pill">{s.site}</span>
+                              <div className="d-col d-site">
+                                <span className="site-pill-dense" title={s.site}>{s.site}</span>
                               </div>
 
-                              {/* Test */}
-                              <div className="c-col c-test muted" title={s.test}>
+                              {/* Test (Desktop) */}
+                              <div className="d-col d-test desktop-only muted" title={s.test}>
                                 {s.test}
                               </div>
 
-                              {/* Result & Organism */}
-                              <div className="c-col c-result">
+                              {/* Result / Organism */}
+                              <div className="d-col d-result">
                                 {isPositive && (
-                                  <div className="c-res-line">
-                                    <strong className="c-org-name" style={{ color: effectiveCat === 'sig' ? 'var(--sig)' : 'inherit' }}>
+                                  <div className="d-res-content">
+                                    <strong className={`d-org-text ${effectiveCat === 'sig' ? 'sig' : ''}`}>
                                       {s.org}
                                     </strong>
                                     {s.mdro && <span className="badge mdro mini-tag">{s.mdro}</span>}
-                                    {s.setsTot && <span className="mini-tag muted">{s.setsPos}/{s.setsTot} set</span>}
-                                    {s.cfu && <span className="mini-tag muted">{s.cfu >= 1000 ? `10^${Math.round(Math.log10(s.cfu))}` : s.cfu} UFC</span>}
-                                    {s.clinical && <span className="mini-tag alert-tag">Sospetto clinico</span>}
+                                    {s.setsTot && <span className="mini-tag muted desktop-only">{s.setsPos}/{s.setsTot} set</span>}
+                                    {s.cfu && <span className="mini-tag muted desktop-only">{s.cfu >= 1000 ? `10^${Math.round(Math.log10(s.cfu))}` : s.cfu} UFC</span>}
+                                    {s.clinical && <span className="mini-tag alert-tag desktop-only">Clinico</span>}
                                     {s.ab && (
-                                      <span className="c-ab-text muted" title={s.ab}>
+                                      <span className="d-ab-snippet muted desktop-only" title={s.ab}>
                                         • {s.ab}
                                       </span>
                                     )}
@@ -329,37 +380,38 @@ export const PatientDetailModal = () => {
                                 )}
 
                                 {isNegative && (
-                                  <div className="c-res-line">
+                                  <div className="d-res-content">
                                     <span className="badge-neg">Negativo</span>
-                                    <span className="muted" style={{ fontSize: '13px' }}>
-                                      {s.label || 'Nessuna crescita microbica'}
-                                    </span>
+                                    <span className="muted d-label-text">{s.label || 'Nessun germe'}</span>
                                   </div>
                                 )}
 
                                 {isPending && (
-                                  <div className="c-res-line">
+                                  <div className="d-res-content">
                                     <span className="badge-pend">⏳ In corso</span>
-                                    <span className="muted" style={{ fontSize: '13px' }}>
-                                      {s.label || 'In attesa di referto microbiologico'}
-                                    </span>
+                                    <span className="muted d-label-text">{s.label || 'Attesa referto'}</span>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Category / Interpretation */}
-                              <div className="c-col c-cat">
+                              {/* Category / Chip */}
+                              <div className="d-col d-cat">
                                 {isPositive ? (
-                                  <Chip cat={effectiveCat === 'pend' ? 'val' : effectiveCat} />
+                                  <>
+                                    <span className="desktop-only"><Chip cat={effectiveCat === 'pend' ? 'val' : effectiveCat} /></span>
+                                    <span className={`chip ${effectiveCat === 'pend' ? 'val' : effectiveCat} mini-chip mobile-only`}>
+                                      {SHORT_CAT[effectiveCat]}
+                                    </span>
+                                  </>
                                 ) : isPending ? (
-                                  <span className="chip pend" style={{ fontSize: '11px', padding: '1px 6px' }}>In corso</span>
+                                  <span className="chip pend mini-chip">In corso</span>
                                 ) : (
-                                  <span className="chip con" style={{ fontSize: '11px', padding: '1px 6px' }}>Negativo</span>
+                                  <span className="chip con mini-chip">Negativo</span>
                                 )}
                               </div>
 
-                              {/* Actions */}
-                              <div className="c-col c-actions">
+                              {/* Actions / Dropdown (Desktop) */}
+                              <div className="d-col d-act" onClick={e => e.stopPropagation()}>
                                 {isPositive && (
                                   <select 
                                     className="quick-cat-select"
@@ -375,11 +427,11 @@ export const PatientDetailModal = () => {
                                 )}
 
                                 {isPending && (
-                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                  <div style={{ display: 'flex', gap: '3px' }}>
                                     <button 
                                       type="button" 
                                       className="btn small" 
-                                      style={{ fontSize: '11px', padding: '2px 5px', color: 'var(--sig)', borderColor: 'var(--sig)' }}
+                                      style={{ fontSize: '10.5px', padding: '1px 5px', color: 'var(--sig)', borderColor: 'var(--sig)' }}
                                       onClick={() => handleQuickReferta(s.id)}
                                       title="Registra germe isolato"
                                     >
@@ -388,7 +440,7 @@ export const PatientDetailModal = () => {
                                     <button 
                                       type="button" 
                                       className="btn small" 
-                                      style={{ fontSize: '11px', padding: '2px 5px' }}
+                                      style={{ fontSize: '10.5px', padding: '1px 5px' }}
                                       onClick={() => handleSaveNegative(s.id)}
                                       title="Registra come negativo"
                                     >
@@ -398,38 +450,113 @@ export const PatientDetailModal = () => {
                                 )}
 
                                 {isNegative && (
-                                  <span className="muted" style={{ fontSize: '12px' }}>—</span>
+                                  <span className="muted" style={{ fontSize: '11px' }}>—</span>
                                 )}
+                              </div>
+
+                              {/* Expand Chevron Icon */}
+                              <div className="d-expand-icon mobile-only">
+                                {isExpanded ? '▲' : '▼'}
                               </div>
                             </div>
 
-                            {/* Inline quick editor if user clicks + Pos for a pending sample */}
+                            {/* Expandable Details Drawer (Mobile & Desktop) */}
+                            {isExpanded && (
+                              <div className="dense-expanded-drawer">
+                                <div className="drawer-grid">
+                                  {isPositive && (
+                                    <>
+                                      {s.ab && (
+                                        <div className="drawer-item">
+                                          <strong>Antibiogramma:</strong> <span>{s.ab}</span>
+                                        </div>
+                                      )}
+                                      {(s.setsTot || s.cfu || s.clinical) && (
+                                        <div className="drawer-item">
+                                          <strong>Dettagli prelievo:</strong>{' '}
+                                          {s.setsTot && `${s.setsPos}/${s.setsTot} set positivi • `}
+                                          {s.cfu && `${s.cfu} UFC • `}
+                                          {s.clinical && `Sospetto clinico confermato`}
+                                        </div>
+                                      )}
+                                      <div className="drawer-item-cat">
+                                        <strong>Classificazione:</strong>
+                                        <div className="drawer-cat-buttons">
+                                          {(['sig', 'col', 'con', 'val'] as CatType[]).map(c => (
+                                            <button
+                                              key={c}
+                                              type="button"
+                                              className={`btn small ${s.cat === c ? 'primary' : ''}`}
+                                              style={{ fontSize: '12px', padding: '3px 8px' }}
+                                              onClick={() => confirmSample(s.id, c)}
+                                            >
+                                              {SHORT_CAT[c]}
+                                            </button>
+                                          ))}
+                                          {s.status === 'confirmed' && (
+                                            <button
+                                              type="button"
+                                              className="btn small"
+                                              style={{ fontSize: '12px', padding: '3px 8px', color: 'var(--muted)' }}
+                                              onClick={() => reopenSample(s.id)}
+                                            >
+                                              Riapri
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+
+                                  {isPending && (
+                                    <div className="drawer-item">
+                                      <span>Esame in corso dal {fmtDMY(s.date)} ({daysSince(s.date)} gg fa).</span>
+                                      <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                                        <button type="button" className="btn small primary" onClick={() => handleQuickReferta(s.id)}>
+                                          + Inserisci Positività (Germe)
+                                        </button>
+                                        <button type="button" className="btn small" onClick={() => handleSaveNegative(s.id)}>
+                                          ✓ Segna Negativo
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {isNegative && (
+                                    <div className="drawer-item muted">
+                                      Esito negativo refertato il {fmtDMY(s.date)}. Nessuna crescita microbica.
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Quick Editor for Positives */}
                             {isEditingThis && (
                               <div className="inline-quick-edit">
-                                <span style={{ fontWeight: 600, fontSize: '13px' }}>Referta positività:</span>
+                                <span style={{ fontWeight: 600, fontSize: '12.5px' }}>Referta positività:</span>
                                 <input 
                                   type="text" 
-                                  placeholder="Nome microrganismo (es. S. aureus)"
+                                  placeholder="Nome germe (es. S. aureus)"
                                   value={quickOrg}
                                   onChange={e => setQuickOrg(e.target.value)}
-                                  style={{ padding: '4px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--line-strong)', flex: 1 }}
+                                  style={{ padding: '3px 7px', fontSize: '12.5px', borderRadius: '4px', border: '1px solid var(--line-strong)', flex: 1 }}
                                 />
                                 <select 
                                   value={quickMdro} 
                                   onChange={e => setQuickMdro(e.target.value)}
-                                  style={{ padding: '4px 6px', fontSize: '12.5px', borderRadius: '4px', border: '1px solid var(--line-strong)' }}
+                                  style={{ padding: '3px 5px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--line-strong)' }}
                                 >
-                                  <option value="">Nessun MDRO</option>
+                                  <option value="">No MDRO</option>
                                   <option value="MRSA">MRSA</option>
                                   <option value="VRE">VRE</option>
                                   <option value="ESBL">ESBL</option>
                                   <option value="CRE/CPE">CRE/CPE</option>
                                   <option value="Pseudomonas CR">Pseudomonas CR</option>
                                   <option value="Acinetobacter CR">Acinetobacter CR</option>
-                                  <option value="Candida auris">Candida auris</option>
                                 </select>
-                                <button type="button" className="btn small primary" onClick={() => handleSavePositive(s.id)}>Salva</button>
-                                <button type="button" className="btn small" onClick={() => setEditingSampleId(null)}>Chiudi</button>
+                                <button type="button" className="btn small primary" style={{ fontSize: '12px', padding: '3px 8px' }} onClick={() => handleSavePositive(s.id)}>Salva</button>
+                                <button type="button" className="btn small" style={{ fontSize: '12px', padding: '3px 8px' }} onClick={() => setEditingSampleId(null)}>Annulla</button>
                               </div>
                             )}
                           </div>
@@ -438,8 +565,8 @@ export const PatientDetailModal = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="empty" style={{ padding: '28px', textAlign: 'center' }}>
-                    Nessun esame microbiologico registrato per questo paziente.
+                  <div className="empty" style={{ padding: '24px', textAlign: 'center' }}>
+                    Nessun esame registrato per questo letto.
                   </div>
                 )}
               </div>

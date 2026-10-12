@@ -36,6 +36,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+import { PwaRegister } from "@/components/PwaRegister";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,7 +53,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#15222E" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body>{children}</body>
+      <body>
+        <PwaRegister />
+        {children}
+      </body>
     </html>
   );
 }
