@@ -229,47 +229,6 @@ export const PatientDetailModal = () => {
                 </div>
               </div>
 
-              {/* Mobile Rapid Horizontal Bed Strip */}
-              <div className="mobile-bed-strip mobile-only" aria-label="Selettore rapido letti mobile">
-                {Array.from({ length: BEDS }, (_, i) => i + 1).map(bedNum => {
-                  const p = db.patients.find(x => x.bed === bedNum);
-                  const isSelected = currentPatient && currentPatient.bed === bedNum;
-
-                  if (!p) {
-                    return (
-                      <button
-                        key={`m-bed-${bedNum}`}
-                        type="button"
-                        className="m-bed-pill free"
-                        onClick={() => {
-                          document.dispatchEvent(new CustomEvent('open-admit-modal', { detail: { bed: bedNum } }));
-                        }}
-                      >
-                        L{bedNum}
-                      </button>
-                    );
-                  }
-
-                  const pSamples = db.samples.filter(s => s.pid === p.id && s.result === 'pos');
-                  const hasSig = pSamples.some(s => getEffectiveCat(s) === 'sig');
-                  const hasCol = pSamples.some(s => getEffectiveCat(s) === 'col');
-                  const hasPend = db.samples.some(s => s.pid === p.id && (isPendingCulture(s) || getEffectiveCat(s) === 'pend'));
-                  const dotColor = hasSig ? 'var(--sig)' : hasCol ? 'var(--col-b)' : hasPend ? 'var(--pend)' : 'var(--line-strong)';
-
-                  return (
-                    <button
-                      key={`m-bed-${bedNum}`}
-                      type="button"
-                      className={`m-bed-pill ${isSelected ? 'active' : ''}`}
-                      onClick={() => { setPid(p.id); setConfirmFree(null); }}
-                    >
-                      <span className="m-pill-dot" style={{ background: dotColor }} />
-                      L{bedNum}
-                    </button>
-                  );
-                })}
-              </div>
-
               {/* Compact Diagnosis & Isolation Strip */}
               <div className="p-modal-summary-bar">
                 <div className="p-summary-text">
