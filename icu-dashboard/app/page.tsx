@@ -6,10 +6,11 @@ import { Queue } from '@/components/Queue';
 import { MdroList } from '@/components/MdroList';
 import { PatientDetailModal } from '@/components/PatientDetailModal';
 import { Modals } from '@/components/Modals';
+import { AuthGate, logoutApp } from '@/components/AuthGate';
 import { isPendingCulture } from '@/lib/logic';
 
 const Header = () => {
-  const { db, setOperator, exportData, importData } = useDashboard();
+  const { db, syncStatus, setOperator, exportData, importData, resetDemoData } = useDashboard();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,13 +31,43 @@ const Header = () => {
     reader.readAsText(file);
   };
 
+  const getSyncBadge = () => {
+    switch (syncStatus) {
+      case 'synced':
+        return (
+          <span className="sync-status" title="Sincronizzato in tempo reale su Firebase con tutti i dispositivi">
+            🟢 Online (Firebase)
+          </span>
+        );
+      case 'saving':
+        return (
+          <span className="sync-status" style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }} title="Salvataggio sul cloud in corso...">
+            🟡 Salvataggio...
+          </span>
+        );
+      case 'error':
+        return (
+          <span className="sync-status" style={{ background: '#fee2e2', color: '#991b1b', borderColor: '#fecaca' }} title="Errore di sincronizzazione online. Controlla le regole Firestore.">
+            ⚠️ Errore Cloud
+          </span>
+        );
+      default:
+        return (
+          <span className="sync-status">
+            ⚪ Offline
+          </span>
+        );
+    }
+  };
+
   return (
     <header className="top">
       <div>
         <h1>MicroBoard</h1>
-        <p>Terapia intensiva. Prototipo con pazienti e referti fittizi: le regole di classificazione sono esempi da validare con il microbiologo o l'infettivologo prima di qualsiasi uso reale.</p>
+        <p>Terapia intensiva. Prototipo con pazienti e referti: le regole di classificazione sono esempi da validare con il microbiologo o l'infettivologo prima di qualsiasi uso reale.</p>
       </div>
       <div className="tools">
+        {getSyncBadge()}
         <label>Operatore 
           <input 
             type="text" 
@@ -47,10 +78,16 @@ const Header = () => {
           />
         </label>
         <button className="btn primary" type="button" onClick={() => document.dispatchEvent(new CustomEvent('open-sample-modal'))}>
-          Nuovo esame
+          + Nuovo esame
         </button>
-        <button className="btn" type="button" onClick={exportData}>Esporta dati</button>
-        <button className="btn" type="button" onClick={() => fileInputRef.current?.click()}>Importa dati</button>
+        <button className="btn" type="button" onClick={exportData} title="Scarica backup JSON">Esporta</button>
+        <button className="btn" type="button" onClick={() => fileInputRef.current?.click()} title="Carica backup JSON">Importa</button>
+        <button className="btn" type="button" onClick={resetDemoData} title="Ripristina i 5 letti di prova iniziali su Firebase">
+          Ripristina 5 Letti demo
+        </button>
+        <button className="btn" type="button" onClick={logoutApp} title="Esci dalla sessione protetta">
+          Esci 🔒
+        </button>
         <input type="file" accept="application/json" hidden ref={fileInputRef} onChange={handleImport} />
       </div>
     </header>
@@ -127,8 +164,10 @@ const DashboardContent = () => {
 
 export default function Page() {
   return (
-    <DashboardProvider>
-      <DashboardContent />
-    </DashboardProvider>
+    <AuthGate>
+      <DashboardProvider>
+        <DashboardContent />
+      </DashboardProvider>
+    </AuthGate>
   );
 }

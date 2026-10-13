@@ -166,7 +166,10 @@ export const PatientDetailModal = () => {
                     />
                   </div>
                   <div className="nav-bed-info">
-                    <span className="nav-bed-code">{p.code}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="nav-bed-code">{p.code}</span>
+                      {p.isDemo && <span className="mini-badge" style={{ fontSize: '8.5px', background: '#EEF2F6', color: '#475569' }}>DEMO</span>}
+                    </div>
                     <span className="nav-bed-summary muted">{p.summary}</span>
                   </div>
                   <div className="nav-bed-badges">
@@ -191,6 +194,7 @@ export const PatientDetailModal = () => {
                       Letto {currentPatient.bed}
                     </h2>
                     <span className="p-header-badge">{currentPatient.code}</span>
+                    {currentPatient.isDemo && <span className="badge demo-badge">Letto demo</span>}
                     <span className="muted p-patient-meta">
                       {currentPatient.age}a {currentPatient.sex} • Ricoverato {fmtShortDate(currentPatient.admitted)} (gg {daysSince(currentPatient.admitted) + 1})
                     </span>

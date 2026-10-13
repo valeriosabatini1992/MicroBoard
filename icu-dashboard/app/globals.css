@@ -110,6 +110,20 @@ button { cursor: pointer; }
 .badge.mdro { background: var(--mdro); color: #fff; }
 .badge.iso { background: var(--iso-t); color: var(--iso); border: 1px solid var(--iso); }
 .badge.nodx { background: #fff; color: var(--ink); border: 1px solid var(--ink); }
+.badge.demo-badge { background: #EEF2F6; color: #475569; border: 1px solid var(--line-strong); font-size: 10px; padding: 1px 6px; }
+
+.sync-status {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #15803D;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 
 /* Chips */
 .chip { display: inline-block; font-size: 12.5px; font-weight: 700; border-radius: 4px; padding: 2px 8px; white-space: nowrap; }
@@ -178,10 +192,31 @@ tr:last-child td { border-bottom: 0; }
 .prop { font-size: 13.5px; display: grid; gap: 5px; }
 .close-d { display: none; }
 
-/* Modal */
-.backdrop { position: fixed; inset: 0; background: rgba(21, 34, 46, .55); z-index: 50; }
-.modal { position: fixed; z-index: 51; top: 4vh; left: 50%; transform: translateX(-50%); width: min(680px, 96vw); max-height: 92vh; overflow: auto; background: #fff; border-radius: 10px; box-shadow: 0 18px 60px rgba(0,0,0,.35); }
-.m-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; }
+/* Modal (Action dialogs: Nuovo esame, Assegna paziente) */
+.backdrop { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(15, 23, 42, 0.65); 
+  backdrop-filter: blur(4px); 
+  z-index: 110; 
+  animation: fadeIn 0.15s ease-out;
+}
+.modal { 
+  position: fixed; 
+  z-index: 120; 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%); 
+  width: min(680px, 96vw); 
+  max-height: 90vh; 
+  overflow: auto; 
+  background: #fff; 
+  border-radius: 12px; 
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.45); 
+  border: 1px solid var(--line);
+  animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.m-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 1; }
 .m-head h2 { margin: 0; font-size: 19px; }
 .m-body { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
 .m-body .full { grid-column: 1 / -1; }
@@ -191,18 +226,8 @@ tr:last-child td { border-bottom: 0; }
 .check { display: flex; gap: 9px; align-items: flex-start; font-size: 14px; color: var(--ink); }
 .check input { width: 18px; height: 18px; margin-top: 2px; }
 .preview { border: 1px dashed var(--line-strong); border-radius: 6px; padding: 10px 12px; background: #F6F8FA; font-size: 14px; display: grid; gap: 5px; }
-.m-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: #fff; }
+.m-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: #fff; z-index: 1; }
 .err { margin: 0 auto 0 0; color: var(--sig); font-weight: 600; font-size: 14px; }
-
-/* Patient Detail Centered Modal */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 90;
-  animation: fadeIn 0.15s ease-out;
-}
 
 /* Responsive Utilities */
 .desktop-only { display: block; }

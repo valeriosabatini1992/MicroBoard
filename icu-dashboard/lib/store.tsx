@@ -1,8 +1,13 @@
 'use client';
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { DB, Patient, Sample, CatType } from './types';
 import { seed } from './data';
-import { todayISO, suggest } from './logic';
+import { todayISO } from './logic';
+import { firestore } from './firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+
+const STORAGE_KEY = 'microboard_data_v2';
+const WARD_DOC_ID = 'main';
 
 interface DashboardContextType {
   db: DB;
@@ -11,6 +16,7 @@ interface DashboardContextType {
     pid: string | null;
     confirmFree: string | null;
   };
+  syncStatus: 'synced' | 'saving' | 'error' | 'offline';
   setTab: (tab: string) => void;
   setPid: (pid: string | null) => void;
   setConfirmFree: (pid: string | null) => void;
@@ -26,6 +32,7 @@ interface DashboardContextType {
   addPatient: (patient: Patient) => void;
   exportData: () => void;
   importData: (db: DB) => void;
+  resetDemoData: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
@@ -38,16 +45,82 @@ export const useDashboard = () => {
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [db, setDb] = useState<DB>(seed);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'saving' | 'error' | 'offline'>('synced');
   const [ui, setUi] = useState({
     tab: 'beds',
     pid: null as string | null,
     confirmFree: null as string | null
   });
 
+  const isRemoteUpdate = useRef(false);
+
+  // Synchronize in Realtime with Firebase Firestore
+  useEffect(() => {
+    const docRef = doc(firestore, 'wards', WARD_DOC_ID);
+
+    // Initial local cache fallback
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.patients && parsed?.samples) {
+          setDb(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Cache locale read error:', e);
+    }
+
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const remoteData = docSnap.data() as DB;
+          if (Array.isArray(remoteData.patients) && Array.isArray(remoteData.samples)) {
+            isRemoteUpdate.current = true;
+            setDb(remoteData);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
+            } catch (err) {}
+            setSyncStatus('synced');
+          }
+        } else {
+          // Document does not exist in Firestore yet: initialize with seed (5 demo beds)
+          setDoc(docRef, seed).catch((err) => {
+            console.error('Inizializzazione Firestore fallita:', err);
+          });
+        }
+      },
+      (error) => {
+        console.error('Firestore snapshot error:', error);
+        setSyncStatus('error');
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Save changes to Firestore
+  const saveToFirestore = async (newDb: DB) => {
+    setSyncStatus('saving');
+    try {
+      const docRef = doc(firestore, 'wards', WARD_DOC_ID);
+      await setDoc(docRef, newDb);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newDb));
+      } catch (e) {}
+      setSyncStatus('synced');
+    } catch (error) {
+      console.error('Errore salvataggio Firestore:', error);
+      setSyncStatus('error');
+    }
+  };
+
   const updateDb = (fn: (draft: DB) => void) => {
     setDb(prev => {
       const next = { ...prev, patients: [...prev.patients], samples: [...prev.samples] };
       fn(next);
+      saveToFirestore(next);
       return next;
     });
   };
@@ -123,7 +196,11 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
   const addSample = (sample: Sample) => {
     updateDb(d => {
-      d.samples.push(sample);
+      const sampleWithId: Sample = {
+        ...sample,
+        id: sample.id || ('s' + Date.now() + Math.random().toString(36).substring(2, 6))
+      };
+      d.samples.push(sampleWithId);
     });
     updateUi({ pid: sample.pid });
   };
@@ -158,14 +235,23 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
   const importData = (newDb: DB) => {
     setDb(newDb);
+    saveToFirestore(newDb);
     updateUi({ pid: null, tab: 'beds' });
+  };
+
+  const resetDemoData = () => {
+    if (confirm('Vuoi ripristinare i 5 letti demo iniziali? Tutte le modifiche (anche online) verranno sovrascritte.')) {
+      setDb(seed);
+      saveToFirestore(seed);
+      updateUi({ pid: null, tab: 'beds' });
+    }
   };
 
   return (
     <DashboardContext.Provider value={{
-      db, ui, setTab, setPid, setConfirmFree, setOperator,
+      db, ui, syncStatus, setTab, setPid, setConfirmFree, setOperator,
       confirmSample, reopenSample, startIsolation, stopIsolation,
-      toggleNodx, freeBed, addSample, updateSample, addPatient, exportData, importData
+      toggleNodx, freeBed, addSample, updateSample, addPatient, exportData, importData, resetDemoData
     }}>
       {children}
     </DashboardContext.Provider>
