@@ -45,6 +45,7 @@ export interface Patient {
     reason: string;
   } | null;
   nodx: boolean;
+  isDemo?: boolean;
 }
 
 export interface DB {
