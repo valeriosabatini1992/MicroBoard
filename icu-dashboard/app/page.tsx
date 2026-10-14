@@ -2,6 +2,7 @@
 import React, { useRef } from 'react';
 import { DashboardProvider, useDashboard } from '@/lib/store';
 import { BedBoard } from '@/components/BedBoard';
+import { WardMap } from '@/components/WardMap';
 import { Queue } from '@/components/Queue';
 import { MdroList } from '@/components/MdroList';
 import { PatientDetailModal } from '@/components/PatientDetailModal';
@@ -64,8 +65,11 @@ const Header = () => {
     <header className="top">
       <div>
         <h1>MicroBoard</h1>
+        {/* Didascalia nascosta su richiesta:
         <p>Terapia intensiva. Prototipo con pazienti e referti: le regole di classificazione sono esempi da validare con il microbiologo o l'infettivologo prima di qualsiasi uso reale.</p>
+        */}
       </div>
+      {/* Barra strumenti nascosta su richiesta (sync, operatore, nuovo esame, esporta/importa, demo, esci)
       <div className="tools">
         {getSyncBadge()}
         <label>Operatore 
@@ -90,6 +94,7 @@ const Header = () => {
         </button>
         <input type="file" accept="application/json" hidden ref={fileInputRef} onChange={handleImport} />
       </div>
+      */}
     </header>
   );
 };
@@ -118,6 +123,7 @@ const Tabs = () => {
 
   const tabs = [
     { id: 'beds', label: 'Letti' },
+    { id: 'map', label: 'Mappa reparto' },
     { id: 'queue', label: 'Da rivedere', count: pend },
     { id: 'mdro', label: 'MDRO e isolamenti' }
   ];
@@ -152,6 +158,7 @@ const DashboardContent = () => {
       <div className="layout">
         <main id="list">
           {ui.tab === 'beds' && <BedBoard />}
+          {ui.tab === 'map' && <WardMap />}
           {ui.tab === 'queue' && <Queue />}
           {ui.tab === 'mdro' && <MdroList />}
         </main>

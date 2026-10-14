@@ -254,7 +254,7 @@ export const PatientDetailModal = () => {
                   ) : (
                     <div className="desktop-only" style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
                       <span className="muted" style={{ fontSize: '11.5px' }}>Isolamento:</span>
-                      {['Contatto', 'Droplet'].map(t => (
+                      {['Contatto', 'Droplet', 'Respiratorio', 'Standard'].map(t => (
                         <button key={t} type="button" className="btn small" style={{ fontSize: '11px', padding: '1px 5px' }} onClick={() => startIsolation(currentPatient.id, t)}>{t}</button>
                       ))}
                     </div>

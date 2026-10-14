@@ -12,7 +12,7 @@ export const MdroList = () => {
   const needsIso = (p: any) => !p.iso && db.samples.filter(s => s.pid === p.id).some(isMdro);
 
   const noIso = db.patients.filter(needsIso);
-  const isoRows = db.patients.filter(p => p.iso).sort((a, b) => a.bed - b.bed);
+  const isoRows = db.patients.filter(p => p.iso).sort((a, b) => String(a.bed).localeCompare(String(b.bed), undefined, { numeric: true }));
   const mRows = db.samples.filter(s => isMdro(s) && db.patients.find(p => p.id === s.pid)).sort((a, b) => b.date.localeCompare(a.date));
 
   return (

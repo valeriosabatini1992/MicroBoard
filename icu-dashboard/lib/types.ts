@@ -32,7 +32,7 @@ export interface Sample {
 
 export interface Patient {
   id: string;
-  bed: number;
+  bed: number | string; // string used for non-numeric beds, e.g. "9bis"
   code: string;
   age: number;
   sex: string;

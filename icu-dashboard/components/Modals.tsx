@@ -9,7 +9,7 @@ export const Modals = () => {
   const [activeModal, setActiveModal] = useState<'sample' | 'admit' | null>(null);
   
   const [modalPid, setModalPid] = useState<string>('');
-  const [modalBed, setModalBed] = useState<number>(0);
+  const [modalBed, setModalBed] = useState<number | string>(0);
 
   // Sample form state
   const [fDate, setFDate] = useState(todayISO);
@@ -122,7 +122,7 @@ export const Modals = () => {
             <div className="m-body">
               <label className="fld">Paziente
                 <select value={modalPid} onChange={e => setModalPid(e.target.value)}>
-                  {db.patients.slice().sort((a, b) => a.bed - b.bed).map(p => (
+                  {db.patients.slice().sort((a, b) => String(a.bed).localeCompare(String(b.bed), undefined, { numeric: true })).map(p => (
                     <option key={p.id} value={p.id}>Letto {p.bed}, {p.code}</option>
                   ))}
                 </select>
