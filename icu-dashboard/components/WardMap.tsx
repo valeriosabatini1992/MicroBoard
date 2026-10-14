@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '@/lib/store';
 import { Patient } from '@/lib/types';
 import layout from '@/lib/ward-layout.json';
@@ -53,7 +53,6 @@ const renderIsoIcon = (type: IsolationType, size = 16, color?: string) => {
 
   switch (type) {
     case 'Contatto':
-      // Open hand / contact icon
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 11V6a2 2 0 0 0-4 0v5" />
@@ -63,17 +62,15 @@ const renderIsoIcon = (type: IsolationType, size = 16, color?: string) => {
         </svg>
       );
     case 'Droplet':
-      // Water droplets
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill={iconColor}>
           <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
         </svg>
       );
     case 'Respiratorio':
-      // Face / surgical mask
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="8" width="16" height="10" rx="3" fill={iconColor} fillOpacity="0.25" />
+          <rect x="4" y="8" width="16" height="10" fill={iconColor} fillOpacity="0.25" />
           <line x1="7" y1="12" x2="17" y2="12" />
           <line x1="7" y1="14.5" x2="17" y2="14.5" />
           <path d="M4 10.5C2 11 1 12 1 13s1 2 3 2.5" />
@@ -81,7 +78,6 @@ const renderIsoIcon = (type: IsolationType, size = 16, color?: string) => {
         </svg>
       );
     case 'Standard':
-      // Shield (protective for immunosuppressed patients)
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill={iconColor}>
           <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" />
@@ -117,7 +113,6 @@ function wrapDiagnosis(text: string, maxCharsPerLine: number, maxLines: number):
       if (currentLine) {
         lines.push(currentLine);
         if (lines.length >= maxLines) {
-          // Reached max allowed lines: add ellipsis to last line
           let last = lines[lines.length - 1];
           if (last.length > maxCharsPerLine - 2) {
             last = last.slice(0, maxCharsPerLine - 3);
@@ -127,7 +122,6 @@ function wrapDiagnosis(text: string, maxCharsPerLine: number, maxLines: number):
         }
         currentLine = word;
       } else {
-        // Single word exceeds line width
         lines.push(word.slice(0, maxCharsPerLine - 1) + '…');
         if (lines.length >= maxLines) return lines;
         currentLine = '';
@@ -152,42 +146,121 @@ export const WardMap = () => {
   const { db, ui, setPid } = useDashboard();
   const [vx, vy, vw, vh] = layout.viewBox;
 
-  const openFree = (bed: string) => {
-    const n = Number(bed);
-    document.dispatchEvent(new CustomEvent('open-admit-modal', { detail: { bed: Number.isNaN(n) ? bed : n } }));
+  // Interactive filter highlight on hover/click in legend
+  const [activeFilter, setActiveFilter] = useState<IsolationType | 'Libero' | null>(null);
+
+  // Click animation state
+  const [clickedBedId, setClickedBedId] = useState<string | null>(null);
+
+  const handleBedClick = (bedId: string, patientId?: string) => {
+    setClickedBedId(bedId);
+    setTimeout(() => {
+      setClickedBedId(null);
+    }, 250);
+
+    if (patientId) {
+      setPid(patientId);
+    } else {
+      const n = Number(bedId);
+      document.dispatchEvent(new CustomEvent('open-admit-modal', { detail: { bed: Number.isNaN(n) ? bedId : n } }));
+    }
   };
+
+  // Quick stats
+  const totalBeds = layout.beds.length;
+  const occupiedCount = db.patients.filter(p => layout.beds.some(b => String(p.bed) === b.id)).length;
+  const freeCount = totalBeds - occupiedCount;
+  const isoCount = db.patients.filter(p => layout.beds.some(b => String(p.bed) === b.id) && p.iso).length;
 
   return (
     <div className="ward-map-wrap">
-      {/* Legend for isolation types with icons */}
-      <div className="ward-legend" aria-label="Legenda tipi di isolamento">
-        {(Object.keys(ISO_CONFIGS) as IsolationType[]).map(key => {
-          const cfg = ISO_CONFIGS[key];
-          return (
-            <span key={key} className="ward-legend-item">
-              <span 
-                className="ward-legend-icon-badge" 
-                style={{ background: cfg.bg, borderColor: cfg.border }}
+      {/* Interactive Legend with Counter Pills & Hover Highlights */}
+      <div className="ward-legend-card" role="toolbar" aria-label="Legenda e filtri isolamento">
+        <div className="ward-legend-items">
+          {(Object.keys(ISO_CONFIGS) as IsolationType[]).map(key => {
+            const cfg = ISO_CONFIGS[key];
+            const isFilterActive = activeFilter === key;
+            const count = db.patients.filter(p => {
+              const matchedBed = layout.beds.some(b => String(p.bed) === b.id);
+              return matchedBed && getIsolationType(p) === key;
+            }).length;
+
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`ward-legend-btn ${isFilterActive ? 'active' : ''}`}
+                onMouseEnter={() => setActiveFilter(key)}
+                onMouseLeave={() => setActiveFilter(null)}
+                onClick={() => setActiveFilter(activeFilter === key ? null : key)}
+                title={`Evidenzia pazienti in isolamento ${cfg.label}`}
               >
-                {renderIsoIcon(key, 15, cfg.color)}
-              </span>
-              <strong style={{ color: cfg.color }}>{cfg.label}</strong>
-              {cfg.subLabel && <span className="muted" style={{ fontSize: '11px' }}>({cfg.subLabel})</span>}
+                <span 
+                  className="ward-legend-icon-badge" 
+                  style={{ background: cfg.bg, borderColor: cfg.border }}
+                >
+                  {renderIsoIcon(key, 15, cfg.color)}
+                </span>
+                <span className="ward-legend-text" style={{ color: cfg.color }}>{cfg.label}</span>
+                {cfg.subLabel && <span className="ward-legend-sublabel">({cfg.subLabel})</span>}
+                {count > 0 && <span className="ward-count-chip" style={{ background: cfg.bg, color: cfg.color }}>{count}</span>}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            className={`ward-legend-btn free-btn ${activeFilter === 'Libero' ? 'active' : ''}`}
+            onMouseEnter={() => setActiveFilter('Libero')}
+            onMouseLeave={() => setActiveFilter(null)}
+            onClick={() => setActiveFilter(activeFilter === 'Libero' ? null : 'Libero')}
+            title="Evidenzia letti liberi"
+          >
+            <span className="ward-legend-icon-badge free-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
             </span>
-          );
-        })}
-        <span className="ward-legend-item">
-          <span className="ward-legend-icon-badge free-badge" />
-          <span>Libero</span>
-        </span>
+            <span className="ward-legend-text">Libero</span>
+            <span className="ward-count-chip free-chip">{freeCount}</span>
+          </button>
+        </div>
+
+        {/* Status mini bar */}
+        <div className="ward-quick-stats">
+          <span><b>{occupiedCount}</b>/{totalBeds} occupati</span>
+          <span className="stats-dot">•</span>
+          <span><b>{isoCount}</b> in isolamento</span>
+          {activeFilter && (
+            <>
+              <span className="stats-dot">•</span>
+              <button type="button" className="ward-clear-filter" onClick={() => setActiveFilter(null)}>
+                Mostra tutti ✕
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Clean Architectural SVG Map - Straight Technical Lines without corner radius */}
       <svg
         className="ward-map"
         viewBox={`${vx} ${vy} ${vw} ${vh}`}
         role="img"
-        aria-label="Piantina del reparto con numero letto, isolamento e diagnosi"
+        aria-label="Piantina della terapia intensiva"
       >
+        <defs>
+          <pattern id="arch-dots" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="0.9" fill="#CBD5E1" opacity="0.65" />
+          </pattern>
+        </defs>
+
+        {/* Ward background */}
+        <rect x={vx} y={vy} width={vw} height={vh} fill="var(--bg)" />
+        <rect x={vx} y={vy} width={vw} height={vh} fill="url(#arch-dots)" />
+
+        {/* Beds Rendering - Straight 90° corners, stable fixed isolation icon */}
         {layout.beds.map(b => {
           const p = db.patients.find(x => String(x.bed) === b.id);
           const isOpen = b.kind === 'open_space';
@@ -195,30 +268,45 @@ export const WardMap = () => {
           const ny = b.anchors.number.y;
           const cx = b.anchors.center.x;
           const selected = p && ui.pid === p.id;
+          const isClicked = clickedBedId === b.id;
           const isoType = getIsolationType(p);
           const isoCfg = isoType ? ISO_CONFIGS[isoType] : null;
 
-          // Bed diagnosis text: prefer dx, fallback to summary
+          const isDimmed = activeFilter && (
+            activeFilter === 'Libero' ? Boolean(p) : isoType !== activeFilter
+          );
+          const isHighlighted = activeFilter && (
+            activeFilter === 'Libero' ? !p : isoType === activeFilter
+          );
+
           const diagnosis = p ? (p.dx?.trim() || p.summary?.trim() || 'Nessuna diagnosi registrata') : '';
 
           if (!p) {
             return (
               <g
                 key={b.id}
-                className="wm-bed free"
+                className={`wm-bed free ${isClicked ? 'clicked' : ''} ${isDimmed ? 'dimmed' : ''} ${isHighlighted ? 'highlighted' : ''}`}
                 role="button"
                 tabIndex={0}
                 aria-label={`Letto ${b.label} libero - Clicca per assegnare`}
-                onClick={() => openFree(b.id)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openFree(b.id); }}
+                onClick={() => handleBedClick(b.id)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleBedClick(b.id); }}
               >
-                <title>{`Letto ${b.label} · Libero`}</title>
-                <rect className="wm-shape" x={b.x} y={b.y} width={b.w} height={b.h} fill="#FFFFFF" />
+                <title>{`Letto ${b.label} · Libero (Clicca per assegnare paziente)`}</title>
                 
-                {/* Only Bed Number */}
+                {/* Base Bed Card - Straight 90° corners */}
+                <rect 
+                  className="wm-shape free-shape" 
+                  x={b.x} 
+                  y={b.y} 
+                  width={b.w} 
+                  height={b.h} 
+                />
+                
+                {/* Bed Number */}
                 <text className="wm-no" x={nx} y={ny}>{b.label}</text>
 
-                {/* Free label centered without overflowing */}
+                {/* Free label */}
                 <text 
                   className="wm-free" 
                   x={isOpen ? b.x + b.w / 2 + 10 : cx} 
@@ -231,12 +319,9 @@ export const WardMap = () => {
             );
           }
 
-          // Text wrapping parameters calibrated to keep text strictly inside the box
+          // Open-space beds (10-13, h ≈ 41)
           if (isOpen) {
-            // Narrow open-space beds (10-13, h ≈ 41, w ≈ 143.6)
-            // Layout: [Bed No] [Iso Icon] [Diagnosis 1 line]
-            const isoBadgeWidth = isoCfg ? 22 : 0;
-            const textStartX = b.x + 34 + (isoCfg ? 26 : 0);
+            const textStartX = b.x + 34 + (isoCfg ? 27 : 0);
             const availableTextWidth = b.x + b.w - textStartX - 8;
             const maxChars = Math.max(10, Math.floor(availableTextWidth / 6.2));
             const wrapped = wrapDiagnosis(diagnosis, maxChars, 1);
@@ -244,30 +329,43 @@ export const WardMap = () => {
             return (
               <g
                 key={b.id}
-                className={`wm-bed occupied ${selected ? 'selected' : ''}`}
+                className={`wm-bed occupied ${selected ? 'selected' : ''} ${isClicked ? 'clicked' : ''} ${isDimmed ? 'dimmed' : ''} ${isHighlighted ? 'highlighted' : ''}`}
                 role="button"
                 tabIndex={0}
                 aria-label={`Letto ${b.label}, ${diagnosis}${isoType ? ` - Isolamento ${isoType}` : ''}`}
-                onClick={() => setPid(p.id)}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setPid(p.id); }}
+                onClick={() => handleBedClick(b.id, p.id)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleBedClick(b.id, p.id); }}
               >
-                <title>{`Letto ${b.label} · ${diagnosis}${isoType ? ` · Isolamento ${isoType}` : ''}`}</title>
-                <rect className="wm-shape" x={b.x} y={b.y} width={b.w} height={b.h} fill="#FFFFFF" />
+                <title>{`Letto ${b.label} · ${diagnosis}${isoType ? ` · Isolamento ${isoType}` : ''} (Clicca per dettagli)`}</title>
                 
-                {/* Only Bed Number */}
-                <text className="wm-no-open" x={b.x + 7} y={b.y + b.h / 2 + 6}>{b.label}</text>
+                {/* Base Bed Card - Straight 90° corners */}
+                <rect 
+                  className="wm-shape" 
+                  x={b.x} 
+                  y={b.y} 
+                  width={b.w} 
+                  height={b.h} 
+                />
 
-                {/* Isolation Symbol only (no text) */}
+                {/* Selection Stripe */}
+                {selected && (
+                  <rect x={b.x} y={b.y} width="5" height={b.h} fill="var(--pend)" />
+                )}
+                
+                {/* Bed Number */}
+                <text className="wm-no-open" x={b.x + 8} y={b.y + b.h / 2 + 5.5}>{b.label}</text>
+
+                {/* Isolation Symbol Badge - Stable & fixed without transform */}
                 {isoCfg && (
                   <g transform={`translate(${b.x + 32}, ${b.y + (b.h - 22) / 2})`}>
-                    <rect width="22" height="22" rx="5" fill={isoCfg.bg} stroke={isoCfg.border} strokeWidth="1.3" />
+                    <rect width="22" height="22" fill={isoCfg.bg} stroke={isoCfg.border} strokeWidth="1.3" />
                     <g transform="translate(3, 3)">
                       {renderIsoIcon(isoCfg.id, 16, isoCfg.color)}
                     </g>
                   </g>
                 )}
 
-                {/* Diagnosis strictly inside box */}
+                {/* Patient Diagnosis */}
                 {wrapped.map((line, i) => (
                   <text 
                     key={i} 
@@ -282,47 +380,57 @@ export const WardMap = () => {
             );
           }
 
-          // Standard rooms (h: 76-116, w: 114-140)
-          // Top row: Bed Number on left, Isolation Symbol badge on right
-          // Body: Patient diagnosis wrapped neatly on multiple lines inside box boundaries
-          const badgeX = b.x + b.w - 28;
-          const badgeY = b.y + 7;
-          const textMarginX = b.x + 10;
-          const maxLineWidth = b.w - 20;
+          // Standard single rooms (1-9, 9bis, 14, 16, 18)
+          const badgeX = b.x + b.w - 29;
+          const badgeY = b.y + 8;
+          const textMarginX = b.x + 11;
+          const maxLineWidth = b.w - 22;
           const maxCharsPerLine = Math.max(14, Math.floor(maxLineWidth / 6.4));
           const maxLines = b.h > 100 ? 4 : b.h > 80 ? 3 : 2;
           const wrapped = wrapDiagnosis(diagnosis, maxCharsPerLine, maxLines);
           const startTextY = b.y + 40;
-          const lineHeight = 14;
+          const lineHeight = 14.5;
 
           return (
             <g
               key={b.id}
-              className={`wm-bed occupied ${selected ? 'selected' : ''}`}
+              className={`wm-bed occupied ${selected ? 'selected' : ''} ${isClicked ? 'clicked' : ''} ${isDimmed ? 'dimmed' : ''} ${isHighlighted ? 'highlighted' : ''}`}
               role="button"
               tabIndex={0}
               aria-label={`Letto ${b.label}, ${diagnosis}${isoType ? ` - Isolamento ${isoType}` : ''}`}
-              onClick={() => setPid(p.id)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setPid(p.id); }}
+              onClick={() => handleBedClick(b.id, p.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleBedClick(b.id, p.id); }}
             >
-              <title>{`Letto ${b.label} · ${diagnosis}${isoType ? ` · Isolamento ${isoType}` : ''}`}</title>
-              {/* Clean white room background */}
-              <rect className="wm-shape" x={b.x} y={b.y} width={b.w} height={b.h} fill="#FFFFFF" />
+              <title>{`Letto ${b.label} · ${diagnosis}${isoType ? ` · Isolamento ${isoType}` : ''} (Clicca per dettagli)`}</title>
               
-              {/* Only Bed Number */}
+              {/* Base Bed Card - Straight 90° corners */}
+              <rect 
+                className="wm-shape" 
+                x={b.x} 
+                y={b.y} 
+                width={b.w} 
+                height={b.h} 
+              />
+
+              {/* Selection Stripe */}
+              {selected && (
+                <rect x={b.x} y={b.y} width="5" height={b.h} fill="var(--pend)" />
+              )}
+              
+              {/* Bed Number */}
               <text className="wm-no" x={nx} y={ny}>{b.label}</text>
 
-              {/* Isolation Symbol only (no words, compact badge) */}
+              {/* Isolation Symbol Badge - Stable & fixed without transform */}
               {isoCfg && (
                 <g transform={`translate(${badgeX}, ${badgeY})`}>
-                  <rect width="21" height="21" rx="5" fill={isoCfg.bg} stroke={isoCfg.border} strokeWidth="1.3" />
-                  <g transform="translate(2.5, 2.5)">
+                  <rect width="22" height="22" fill={isoCfg.bg} stroke={isoCfg.border} strokeWidth="1.3" />
+                  <g transform="translate(3, 3)">
                     {renderIsoIcon(isoCfg.id, 16, isoCfg.color)}
                   </g>
                 </g>
               )}
 
-              {/* Patient Diagnosis (wrapped lines, perfectly within box) */}
+              {/* Patient Diagnosis strictly wrapped */}
               <g className="wm-dx-group">
                 {wrapped.map((line, idx) => (
                   <text
@@ -339,18 +447,18 @@ export const WardMap = () => {
           );
         })}
 
-        {/* Structure partitions and outlines */}
-        <g stroke="var(--line-strong)" strokeWidth={1} strokeDasharray="5 4" fill="none" pointerEvents="none">
+        {/* Structural Walls & Architectural Partitions - Straight lines */}
+        <g stroke="#94A3B8" strokeWidth={1.2} strokeDasharray="5 4" fill="none" pointerEvents="none">
           {layout.structure.virtualLines.map((l, i) => (
             <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
           ))}
         </g>
-        <g fill="none" stroke="var(--ink)" strokeLinecap="square" pointerEvents="none">
+        <g fill="none" stroke="#0F172A" strokeLinecap="square" strokeLinejoin="miter" pointerEvents="none">
           {layout.structure.rects.map((r, i) => (
             <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} strokeWidth={2.4} />
           ))}
           {layout.structure.lines.map((l, i) => (
-            <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} strokeWidth={l.width >= 2 ? 2 : 1.5} />
+            <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} strokeWidth={l.width >= 2 ? 2.2 : 1.6} />
           ))}
         </g>
       </svg>
