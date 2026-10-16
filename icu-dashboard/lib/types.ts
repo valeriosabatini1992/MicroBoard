@@ -1,5 +1,5 @@
 export type ResultType = 'pos' | 'neg' | 'pending';
-export type CatType = 'sig' | 'col' | 'con' | 'val';
+export type CatType = 'sig' | 'col';
 export type StatusType = 'pending' | 'confirmed' | 'none';
 
 export interface Proposal {
@@ -20,8 +20,10 @@ export interface Sample {
   setsTot: number | null;
   cfu: number | null;
   mdro: string;
-  ab: string;
-  clinical: boolean;
+  ab?: string;
+  clinical?: boolean;
+  bloodDrawSite?: string;
+  isCompleteBloodCulture?: boolean;
   proposal: Proposal | null;
   status: StatusType;
   cat: CatType | null;

@@ -13,7 +13,7 @@ export const Seg = ({ s }: { s: Sample }) => {
   
   return (
     <div className="seg" role="group" aria-label="Classificazione">
-      {(['sig', 'col', 'con'] as CatType[]).map(c => {
+      {(['sig', 'col'] as CatType[]).map(c => {
         const on = s.status === 'confirmed' && s.cat === c;
         const sg = s.status === 'pending' && s.proposal && s.proposal.cat === c;
         return (

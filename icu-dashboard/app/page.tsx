@@ -104,7 +104,7 @@ const Stats = () => {
   
   const pend = db.samples.filter(s => isPendingCulture(s) && db.patients.some(p => p.id === s.pid)).length;
   const sigP = new Set(db.samples.filter(s => s.result === 'pos' && s.status === 'confirmed' && s.cat === 'sig').map(s => s.pid)).size;
-  const mdroP = new Set(db.samples.filter(s => s.result === 'pos' && s.mdro && !(s.status === 'confirmed' && s.cat === 'con') && db.patients.find(p => p.id === s.pid)).map(s => s.pid)).size;
+  const mdroP = new Set(db.samples.filter(s => s.result === 'pos' && s.mdro && db.patients.find(p => p.id === s.pid)).map(s => s.pid)).size;
   const isoP = db.patients.filter(p => p.iso).length;
 
   return (

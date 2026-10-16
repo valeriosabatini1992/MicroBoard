@@ -111,8 +111,13 @@ export const Queue = () => {
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', fontSize: '14px' }}>
               <span className="tag" style={{ background: '#fff', fontWeight: 600, color: 'var(--ink)' }}>
-                Sito: {s.site}
+                Sito: {s.site === 'Sangue' && s.bloodDrawSite ? `${s.site} (${s.bloodDrawSite})` : s.site}
               </span>
+              {s.isCompleteBloodCulture && (
+                <span className="tag" style={{ background: '#EFF6FF', color: '#1D4ED8', borderColor: '#BFDBFE' }}>
+                  Emocoltura completa (1 set CVP + 1 set CVC)
+                </span>
+              )}
               <span className="tag" style={{ background: '#fff' }}>
                 {s.test}
               </span>
@@ -146,7 +151,7 @@ export const Queue = () => {
                     <option value="MRSA">MRSA</option>
                     <option value="VRE">VRE</option>
                     <option value="ESBL">ESBL</option>
-                    <option value="CRE/CPE">CRE/CPE</option>
+                    <option value="CRE">CRE</option>
                     <option value="Pseudomonas CR">Pseudomonas CR</option>
                     <option value="Acinetobacter CR">Acinetobacter CR</option>
                     <option value="Candida auris">Candida auris</option>

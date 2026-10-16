@@ -15,6 +15,8 @@ export const Modals = () => {
   const [fDate, setFDate] = useState(todayISO);
   const [fResult, setFResult] = useState<'pos' | 'neg' | 'pending'>('pos');
   const [fSite, setFSite] = useState('Sangue');
+  const [fBloodSite, setFBloodSite] = useState('CVP/CVC');
+  const [fCompleteBlood, setFCompleteBlood] = useState(false);
   const [fTest, setFTest] = useState('Colturale');
   const [fOrg, setFOrg] = useState('');
   const [fLabel, setFLabel] = useState('');
@@ -22,8 +24,6 @@ export const Modals = () => {
   const [fSt, setFSt] = useState('2');
   const [fCfu, setFCfu] = useState('');
   const [fMdro, setFMdro] = useState('');
-  const [fAb, setFAb] = useState('');
-  const [fClin, setFClin] = useState(false);
   const [sErr, setSErr] = useState('');
 
   // Admit form state
@@ -36,8 +36,8 @@ export const Modals = () => {
   useEffect(() => {
     const handleSample = (e: any) => {
       setModalPid(e.detail?.pid || db.patients[0]?.id || '');
-      setFDate(todayISO); setFResult('pos'); setFSite('Sangue'); setFTest('Colturale');
-      setFOrg(''); setFLabel(''); setFSp('1'); setFSt('2'); setFCfu(''); setFMdro(''); setFAb(''); setFClin(false); setSErr('');
+      setFDate(todayISO); setFResult('pos'); setFSite('Sangue'); setFBloodSite('CVP/CVC'); setFCompleteBlood(false); setFTest('Colturale');
+      setFOrg(''); setFLabel(''); setFSp('1'); setFSt('2'); setFCfu(''); setFMdro(''); setSErr('');
       setActiveModal('sample');
     };
     const handleAdmit = (e: any) => {
@@ -63,28 +63,36 @@ export const Modals = () => {
     let finalOrg = fOrg.trim();
     let finalLabel = fLabel.trim();
     let finalMdro = fMdro;
-    let finalAb = fAb.trim();
-    let finalClin = fClin;
     let finalSp = fSp ? parseInt(fSp, 10) : null;
     let finalSt = fSt ? parseInt(fSt, 10) : null;
     let finalCfu = fCfu ? parseInt(fCfu, 10) : null;
+    const isBlood = fSite === 'Sangue';
+    const finalBloodSite = isBlood ? (fBloodSite.trim() || 'CVP/CVC') : undefined;
+    const finalCompleteBlood = isBlood ? fCompleteBlood : false;
 
     if (fResult === 'pos') {
       if (!finalOrg) { setSErr('Indica il germe o il reperto.'); return; }
-      if (fSite === 'Sangue' && (finalSp == null || finalSt == null || finalSp < 1 || finalSt < finalSp)) {
+      if (isBlood && (finalSp == null || finalSt == null || finalSp < 1 || finalSt < finalSp)) {
         setSErr('Controlla i set: i positivi devono essere almeno 1 e non più dei totali.'); return;
       }
     } else {
-      finalOrg = ''; finalMdro = ''; finalAb = ''; finalClin = false; finalSp = null; finalSt = null; finalCfu = null;
-      if (!finalLabel) finalLabel = fResult === 'neg' ? 'Nessun germe isolato' : 'Risultato atteso';
+      finalOrg = ''; finalMdro = ''; finalSp = null; finalSt = null; finalCfu = null;
+      if (!finalLabel) {
+        if (finalCompleteBlood) {
+          finalLabel = fResult === 'neg' ? 'Emocoltura completa (CVP/CVC) negativa' : 'Emocoltura completa (CVP/CVC) in corso';
+        } else {
+          finalLabel = fResult === 'neg' ? 'Nessun germe isolato' : 'Risultato atteso';
+        }
+      }
     }
 
-    if (fSite !== 'Sangue') { finalSp = null; finalSt = null; }
+    if (!isBlood) { finalSp = null; finalSt = null; }
 
     addSample({
       id: '', pid: modalPid, date: fDate, result: fResult, site: fSite, test: fTest,
       org: finalOrg, label: finalLabel, setsPos: finalSp, setsTot: finalSt, cfu: finalCfu,
-      mdro: finalMdro, ab: finalAb, clinical: finalClin, proposal: null, status: 'none', cat: null, by: '', at: '', note: ''
+      mdro: finalMdro, bloodDrawSite: finalBloodSite, isCompleteBloodCulture: finalCompleteBlood,
+      proposal: null, status: 'none', cat: null, by: '', at: '', note: ''
     });
     close();
   };
@@ -104,10 +112,11 @@ export const Modals = () => {
   };
 
   const pos = fResult === 'pos';
-  const showSets = pos && fSite === 'Sangue';
-  const showCfu = pos && ['BAL', 'Aspirato tracheale', 'Urine', 'Punta di CVC'].includes(fSite);
+  const isBlood = fSite === 'Sangue';
+  const showSets = pos && isBlood;
+  const showCfu = pos && ['BAL', 'Aspirato tracheale', 'Urine'].includes(fSite);
 
-  const previewSugg = pos && fOrg.trim() ? suggest({ result: 'pos', org: fOrg.trim(), site: fSite, test: fTest, setsPos: parseInt(fSp)||0, setsTot: parseInt(fSt)||0, cfu: parseInt(fCfu)||0, clinical: fClin }) : null;
+  const previewSugg = pos && fOrg.trim() ? suggest({ result: 'pos', org: fOrg.trim(), site: fSite, test: fTest, setsPos: parseInt(fSp)||0, setsTot: parseInt(fSt)||0, cfu: parseInt(fCfu)||0 }) : null;
 
   return (
     <>
@@ -134,10 +143,54 @@ export const Modals = () => {
                 </select>
               </label>
               <label className="fld">Tipo di campione
-                <select value={fSite} onChange={e => setFSite(e.target.value)}>
+                <select value={fSite} onChange={e => {
+                  const val = e.target.value;
+                  setFSite(val);
+                  if (val === 'Sangue') {
+                    setFBloodSite('CVP/CVC');
+                  }
+                }}>
                   {SITES.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </label>
+
+              {isBlood && (
+                <>
+                  <label className="check full" style={{ marginTop: '2px', marginBottom: '2px', background: '#F8FAFC', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={fCompleteBlood} 
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setFCompleteBlood(checked);
+                        if (checked) {
+                          setFBloodSite('CVP/CVC');
+                          setFSt('2');
+                        }
+                      }} 
+                    />
+                    <span style={{ fontWeight: 600 }}>
+                      Emocoltura completa (1 set aerobi/anaerobi da CVP e 1 set aerobi/anaerobi da CVC)
+                    </span>
+                  </label>
+
+                  <label className="fld">Sito di prelievo
+                    <input 
+                      type="text" 
+                      list="blood-sites" 
+                      placeholder="es. CVP/CVC" 
+                      value={fBloodSite} 
+                      onChange={e => setFBloodSite(e.target.value)} 
+                    />
+                    <datalist id="blood-sites">
+                      <option value="CVP/CVC">CVP/CVC (Periferico + Centrale)</option>
+                      <option value="CVP">CVP (Catetere venoso periferico)</option>
+                      <option value="CVC">CVC (Catetere venoso centrale)</option>
+                    </datalist>
+                  </label>
+                </>
+              )}
+
               <label className="fld">Esame
                 <select value={fTest} onChange={e => setFTest(e.target.value)}>
                   {TESTS.map(v => <option key={v} value={v}>{v}</option>)}
@@ -171,11 +224,6 @@ export const Modals = () => {
                     <select value={fMdro} onChange={e => setFMdro(e.target.value)}>
                       {MDROS.map(v => <option key={v} value={v}>{v || 'Nessun MDRO'}</option>)}
                     </select>
-                  </label>
-                  <label className="fld full">Antibiogramma sintetico<input type="text" placeholder="es. Meropenem R, colistina S" value={fAb} onChange={e => setFAb(e.target.value)} /></label>
-                  <label className="check full">
-                    <input type="checkbox" checked={fClin} onChange={e => setFClin(e.target.checked)} />
-                    <span>Sospetto clinico di infezione (febbre, aumento indici di flogosi, segni nel sito, nuova terapia antibiotica)</span>
                   </label>
 
                   <div className="full preview" aria-live="polite">

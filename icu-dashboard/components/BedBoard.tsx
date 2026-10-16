@@ -30,10 +30,10 @@ export const BedBoard = () => {
     const pos = db.samples.filter(s => s.pid === p.id && s.result === 'pos');
     const by = (c: CatType | 'pend') => pos.filter(s => getEffectiveCat(s) === c);
     
-    const level = by('sig').length ? 'sig' : by('pend').length ? 'pend' : by('col').length ? 'col' : by('con').length ? 'con' : 'none';
+    const level = by('sig').length ? 'sig' : by('pend').length ? 'pend' : by('col').length ? 'col' : 'none';
     
     const infections = by('sig').sort((a, b) => b.date.localeCompare(a.date));
-    const others = [...by('pend'), ...by('col'), ...by('con')].sort((a, b) => b.date.localeCompare(a.date));
+    const others = [...by('pend'), ...by('col')].sort((a, b) => b.date.localeCompare(a.date));
     
     const getUnique = (arr: Sample[]) => {
       const seen = new Set();
@@ -47,9 +47,9 @@ export const BedBoard = () => {
     const displaySamples = [...getUnique(infections), ...getUnique(others)].slice(0, 4);
     const totalCount = new Set([...infections, ...others].map(s => s.org)).size;
     const hasMore = totalCount > 4;
-    const tagTxt: Record<string, string> = { sig: 'Infezione', pend: 'Incerto', col: 'Col.', con: 'Cont.' };
+    const tagTxt: Record<string, string> = { sig: 'Infezione', pend: 'In corso', col: 'Col.' };
 
-    const isMdro = (s: Sample) => s.result === 'pos' && s.mdro && !(s.status === 'confirmed' && s.cat === 'con');
+    const isMdro = (s: Sample) => s.result === 'pos' && Boolean(s.mdro);
     const mdros = Array.from(new Set(pos.filter(isMdro).map(s => s.mdro)));
 
     return (
@@ -71,12 +71,14 @@ export const BedBoard = () => {
               const cat = getEffectiveCat(s);
               return (
                 <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'center', width: '100%' }}>
-                  <div className={`org ${cat}`} style={{ width: '4px', height: '14px', flexShrink: 0, borderRadius: '2px', background: cat === 'sig' ? 'var(--sig)' : cat === 'pend' ? 'var(--pend)' : cat === 'col' ? 'var(--col-b)' : 'var(--con-b)' }} />
+                  <div className={`org ${cat}`} style={{ width: '4px', height: '14px', flexShrink: 0, borderRadius: '2px', background: cat === 'sig' ? 'var(--sig)' : cat === 'pend' ? 'var(--pend)' : 'var(--col-b)' }} />
                   <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>
                     <span style={{ fontWeight: cat === 'sig' ? 700 : 500, color: cat === 'sig' ? 'var(--sig)' : 'inherit' }}>{s.org}</span>
                     {s.mdro && <span className="badge mdro" style={{ marginLeft: '4px', fontSize: '9px', padding: '1px 3px' }}>{s.mdro.replace(/ .*/,'')}</span>}
                   </div>
-                  <div className="muted" style={{ width: '45px', flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', fontSize: '11px' }}>{s.site}</div>
+                  <div className="muted" style={{ width: '55px', flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', fontSize: '11px' }} title={s.site === 'Sangue' && s.bloodDrawSite ? `${s.site} (${s.bloodDrawSite})` : s.site}>
+                    {s.site === 'Sangue' && s.bloodDrawSite ? s.bloodDrawSite : s.site}
+                  </div>
                   <div style={{ width: '55px', flexShrink: 0, textAlign: 'left' }}>
                     <span className={`chip ${cat}`} style={{ fontSize: '9px', padding: '1px 3px' }}>{tagTxt[cat]}</span>
                   </div>

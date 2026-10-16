@@ -8,7 +8,7 @@ export const MdroList = () => {
   const { db, startIsolation, stopIsolation } = useDashboard();
 
   const isPos = (s: any) => s.result === 'pos';
-  const isMdro = (s: any) => isPos(s) && s.mdro && !(s.status === 'confirmed' && s.cat === 'con');
+  const isMdro = (s: any) => isPos(s) && Boolean(s.mdro);
   const needsIso = (p: any) => !p.iso && db.samples.filter(s => s.pid === p.id).some(isMdro);
 
   const noIso = db.patients.filter(needsIso);

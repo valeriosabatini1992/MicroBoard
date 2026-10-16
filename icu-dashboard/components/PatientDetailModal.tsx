@@ -8,8 +8,6 @@ import { Chip } from './DashboardComponents';
 const SHORT_CAT: Record<string, string> = {
   sig: '🔴 Infezione',
   col: '🟡 Col.',
-  con: '⚪ Cont.',
-  val: '🔵 Incerto',
   pend: '⏳ In corso',
 };
 
@@ -50,7 +48,7 @@ export const PatientDetailModal = () => {
   const ss = currentPatient ? db.samples.filter(s => s.pid === currentPatient.id).sort((a, b) => b.date.localeCompare(a.date)) : [];
 
   const isPos = (s: Sample) => s.result === 'pos';
-  const isMdro = (s: Sample) => isPos(s) && s.mdro && !(s.status === 'confirmed' && s.cat === 'con');
+  const isMdro = (s: Sample) => isPos(s) && Boolean(s.mdro);
   const needsIso = currentPatient && !currentPatient.iso && ss.some(isMdro);
 
   const getEffectiveCat = (s: Sample): CatType | 'pend' => {
@@ -315,7 +313,9 @@ export const PatientDetailModal = () => {
 
                               {/* Site */}
                               <div className="d-col d-site">
-                                <span className="site-pill-dense" title={s.site}>{s.site}</span>
+                                <span className="site-pill-dense" title={s.site === 'Sangue' && s.bloodDrawSite ? `${s.site} (${s.bloodDrawSite})` : s.site}>
+                                  {s.site === 'Sangue' && s.bloodDrawSite ? `${s.site} (${s.bloodDrawSite})` : s.site}
+                                </span>
                               </div>
 
                               {/* Test (Desktop) */}
@@ -333,12 +333,7 @@ export const PatientDetailModal = () => {
                                     {s.mdro && <span className="badge mdro mini-tag">{s.mdro}</span>}
                                     {s.setsTot && <span className="mini-tag muted desktop-only">{s.setsPos}/{s.setsTot} set</span>}
                                     {s.cfu && <span className="mini-tag muted desktop-only">{s.cfu >= 1000 ? `10^${Math.round(Math.log10(s.cfu))}` : s.cfu} UFC</span>}
-                                    {s.clinical && <span className="mini-tag alert-tag desktop-only">Clinico</span>}
-                                    {s.ab && (
-                                      <span className="d-ab-snippet muted desktop-only" title={s.ab}>
-                                        • {s.ab}
-                                      </span>
-                                    )}
+                                    {s.isCompleteBloodCulture && <span className="mini-tag muted desktop-only" style={{ background: '#EFF6FF', color: '#1D4ED8' }}>Emocoltura compl.</span>}
                                   </div>
                                 )}
 
@@ -361,15 +356,15 @@ export const PatientDetailModal = () => {
                               <div className="d-col d-cat">
                                 {isPositive ? (
                                   <>
-                                    <span className="desktop-only"><Chip cat={effectiveCat === 'pend' ? 'val' : effectiveCat} /></span>
-                                    <span className={`chip ${effectiveCat === 'pend' ? 'val' : effectiveCat} mini-chip mobile-only`}>
-                                      {SHORT_CAT[effectiveCat]}
+                                    <span className="desktop-only"><Chip cat={effectiveCat === 'pend' ? 'sig' : effectiveCat} /></span>
+                                    <span className={`chip ${effectiveCat === 'pend' ? 'sig' : effectiveCat} mini-chip mobile-only`}>
+                                      {SHORT_CAT[effectiveCat] || SHORT_CAT.sig}
                                     </span>
                                   </>
                                 ) : isPending ? (
                                   <span className="chip pend mini-chip">In corso</span>
                                 ) : (
-                                  <span className="chip con mini-chip">Negativo</span>
+                                  <span className="chip col mini-chip" style={{ background: '#F1F5F9', color: '#475569', borderColor: '#CBD5E1' }}>Negativo</span>
                                 )}
                               </div>
 
@@ -378,14 +373,12 @@ export const PatientDetailModal = () => {
                                 {isPositive && (
                                   <select 
                                     className="quick-cat-select"
-                                    value={s.status === 'confirmed' ? s.cat! : (s.proposal?.cat || 'val')}
+                                    value={s.status === 'confirmed' ? s.cat! : (s.proposal?.cat || 'sig')}
                                     onChange={(e) => confirmSample(s.id, e.target.value as CatType)}
                                     title="Modifica classificazione"
                                   >
                                     <option value="sig">🔴 Infezione</option>
                                     <option value="col">🟡 Colonizz.</option>
-                                    <option value="con">⚪ Contam.</option>
-                                    <option value="val">🔵 Incerto</option>
                                   </select>
                                 )}
 
@@ -429,23 +422,27 @@ export const PatientDetailModal = () => {
                                 <div className="drawer-grid">
                                   {isPositive && (
                                     <>
-                                      {s.ab && (
+                                      {s.site === 'Sangue' && (
                                         <div className="drawer-item">
-                                          <strong>Antibiogramma:</strong> <span>{s.ab}</span>
+                                          <strong>Sito di prelievo:</strong> <span>{s.bloodDrawSite || 'CVP/CVC'}</span>
+                                          {s.isCompleteBloodCulture && (
+                                            <span style={{ marginLeft: '6px', color: '#1D4ED8', fontWeight: 600 }}>
+                                              • Emocoltura completa (1 set aerobi/anaerobi da CVP + 1 set aerobi/anaerobi da CVC)
+                                            </span>
+                                          )}
                                         </div>
                                       )}
-                                      {(s.setsTot || s.cfu || s.clinical) && (
+                                      {(s.setsTot || s.cfu) && (
                                         <div className="drawer-item">
                                           <strong>Dettagli prelievo:</strong>{' '}
-                                          {s.setsTot && `${s.setsPos}/${s.setsTot} set positivi • `}
-                                          {s.cfu && `${s.cfu} UFC • `}
-                                          {s.clinical && `Sospetto clinico confermato`}
+                                          {s.setsTot && `${s.setsPos}/${s.setsTot} set positivi `}
+                                          {s.cfu && `• ${s.cfu} UFC`}
                                         </div>
                                       )}
                                       <div className="drawer-item-cat">
                                         <strong>Classificazione:</strong>
                                         <div className="drawer-cat-buttons">
-                                          {(['sig', 'col', 'con', 'val'] as CatType[]).map(c => (
+                                          {(['sig', 'col'] as CatType[]).map(c => (
                                             <button
                                               key={c}
                                               type="button"
@@ -514,7 +511,7 @@ export const PatientDetailModal = () => {
                                   <option value="MRSA">MRSA</option>
                                   <option value="VRE">VRE</option>
                                   <option value="ESBL">ESBL</option>
-                                  <option value="CRE/CPE">CRE/CPE</option>
+                                  <option value="CRE">CRE</option>
                                   <option value="Pseudomonas CR">Pseudomonas CR</option>
                                   <option value="Acinetobacter CR">Acinetobacter CR</option>
                                 </select>

@@ -162,7 +162,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     updateDb(d => {
       const p = d.patients.find(x => x.id === pid);
       if (p) {
-        const m = d.samples.filter(s => s.pid === p.id && s.result === 'pos' && s.mdro && !(s.status === 'confirmed' && s.cat === 'con'))[0];
+        const m = d.samples.filter(s => s.pid === p.id && s.result === 'pos' && s.mdro)[0];
         p.iso = {
           type,
           since: todayISO,
