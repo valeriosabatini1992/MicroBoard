@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { Lock, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
 
 const AUTH_KEY = 'microboard_auth_session_v1';
 const VALID_PASSWORD = 'Spallanzani';
@@ -11,7 +12,9 @@ interface AuthGateProps {
 export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem(AUTH_KEY) === 'true' || localStorage.getItem(AUTH_KEY) === 'true';
@@ -20,28 +23,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     if (password === VALID_PASSWORD) {
       setError(false);
       localStorage.setItem(AUTH_KEY, 'true');
       setIsAuthenticated(true);
     } else {
       setError(true);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem(AUTH_KEY);
-    sessionStorage.removeItem(AUTH_KEY);
-    setIsAuthenticated(false);
-    setPassword('');
   };
 
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
-          Caricamento...
+      <div className="auth-loading-screen">
+        <div className="auth-loading-content">
+          <div className="auth-spinner" />
+          <span>Verifica autorizzazione in corso...</span>
         </div>
       </div>
     );
@@ -49,66 +47,86 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-md">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-3 text-2xl shadow-inner">
-              🔒
+      <div className="auth-page">
+        {/* Subtle decorative background lights */}
+        <div className="auth-bg-glow glow-1" />
+        <div className="auth-bg-glow glow-2" />
+
+        <div className="auth-card">
+          {/* Header */}
+          <div className="auth-header">
+            <div className="auth-icon-badge">
+              <ShieldCheck size={28} />
             </div>
-            <h1 className="text-xl font-bold text-white tracking-tight">MicroBoard TI</h1>
-            <p className="text-xs text-slate-400 mt-1">Accesso riservato Reparto Terapia Intensiva</p>
+            <div className="auth-brand">
+              <span className="auth-hospital-tag">INMI Lazzaro Spallanzani</span>
+              <h1 className="auth-title">MicroBoard TI</h1>
+              <p className="auth-subtitle">Sorveglianza Microbiologica & Isolamenti Terapia Intensiva</p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label htmlFor="auth-pwd" className="auth-label">
                 Password di Reparto
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError(false);
-                }}
-                placeholder="Inserisci password..."
-                autoFocus
-                className={`w-full px-4 py-2.5 bg-slate-950/80 border rounded-xl text-white text-sm focus:outline-none focus:ring-2 transition ${
-                  error
-                    ? 'border-red-500 focus:ring-red-500/30'
-                    : 'border-slate-700 focus:border-indigo-500 focus:ring-indigo-500/20'
-                }`}
-              />
+              <div className={`auth-input-wrap ${error ? 'has-error' : ''}`}>
+                <Lock className="auth-input-icon" size={17} />
+                <input
+                  id="auth-pwd"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError(false);
+                  }}
+                  placeholder="Inserisci la password..."
+                  autoFocus
+                  required
+                  className="auth-input"
+                />
+                <button
+                  type="button"
+                  className="auth-pwd-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Nascondi password' : 'Mostra password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
               {error && (
-                <p className="text-xs text-red-400 mt-1.5 font-medium flex items-center gap-1">
+                <div className="auth-error-msg" role="alert">
                   <span>⚠️</span> Password errata. Riprova.
-                </p>
+                </div>
               )}
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition cursor-pointer"
+              disabled={!password || isSubmitting}
+              className="auth-submit-btn"
             >
-              Accedi alla Dashboard
+              <span>Accedi alla Dashboard</span>
+              <ArrowRight size={17} className="auth-btn-arrow" />
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
-            <span className="text-[11px] text-slate-500">
-              Sincronizzazione Cloud Firebase in tempo reale attiva
-            </span>
+          {/* Footer cloud sync status */}
+          <div className="auth-footer">
+            <div className="auth-status-pill">
+              <span className="auth-status-dot" />
+              <span>Sincronizzazione Cloud Firebase in tempo reale</span>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
 
 export const logoutApp = () => {

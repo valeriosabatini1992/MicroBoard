@@ -122,8 +122,8 @@ const Tabs = () => {
   const pend = db.samples.filter(s => isPendingCulture(s) && db.patients.some(p => p.id === s.pid)).length;
 
   const tabs = [
-    { id: 'beds', label: 'Letti' },
     { id: 'map', label: 'Mappa reparto' },
+    { id: 'beds', label: 'Letti' },
     { id: 'queue', label: 'Da rivedere', count: pend },
     { id: 'mdro', label: 'MDRO e isolamenti' }
   ];

@@ -47,7 +47,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [db, setDb] = useState<DB>(seed);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'saving' | 'error' | 'offline'>('synced');
   const [ui, setUi] = useState({
-    tab: 'beds',
+    tab: 'map',
     pid: null as string | null,
     confirmFree: null as string | null
   });
@@ -218,7 +218,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     updateDb(d => {
       d.patients.push(patient);
     });
-    updateUi({ pid: patient.id, tab: 'beds' });
+    updateUi({ pid: patient.id });
   };
 
   const exportData = () => {
@@ -236,14 +236,14 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const importData = (newDb: DB) => {
     setDb(newDb);
     saveToFirestore(newDb);
-    updateUi({ pid: null, tab: 'beds' });
+    updateUi({ pid: null, tab: 'map' });
   };
 
   const resetDemoData = () => {
     if (confirm('Vuoi ripristinare i 5 letti demo iniziali? Tutte le modifiche (anche online) verranno sovrascritte.')) {
       setDb(seed);
       saveToFirestore(seed);
-      updateUi({ pid: null, tab: 'beds' });
+      updateUi({ pid: null, tab: 'map' });
     }
   };
 
