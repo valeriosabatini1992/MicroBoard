@@ -80,5 +80,28 @@ export const seed: DB = {
     mk({pid:'p9', date:ago(0), site:'BAL', test:'Colturale', result:'pending', label:'Coltura quantitativa BAL'}),
     mk({pid:'p10', date:ago(6), site:'Urine', test:'Colturale', org:'Enterococcus faecalis', cfu:1e4, ...conf('col',ago(6))}),
     mk({pid:'p10', date:ago(3), site:'Feci', test:'Tossina', org:'Clostridioides difficile (tossina A/B)', ...conf('sig',ago(3))})
+  ],
+  antibiotics: [
+    // p1 - Letto 1 (Meningite da S. pneumoniae)
+    { id: 'abx1', pid: 'p1', drug: 'Ceftriaxone', dosage: '2g q12h', route: 'EV', startDate: ago(3), status: 'active', indication: 'Meningite pneumococcica' },
+    { id: 'abx2', pid: 'p1', drug: 'Vancomicina', dosage: '1g q12h', route: 'EV', startDate: ago(3), status: 'active', indication: 'Copertura empirica anti-pneumococco' },
+    { id: 'abx3', pid: 'p1', drug: 'Ampicillina', dosage: '2g q4h', route: 'EV', startDate: ago(3), endDate: ago(1), status: 'completed', indication: 'Empirica (Listeria)', stopReason: 'De-escalation su antibiogramma (Listeria esclusa)' },
+    
+    // p4 - Letto 4 (VAP da Pseudomonas CR)
+    { id: 'abx4', pid: 'p4', drug: 'Ceftazidime/Avibactam', dosage: '2.5g q8h (inf. 3h)', route: 'EV', startDate: ago(6), status: 'active', indication: 'VAP da Pseudomonas CR' },
+    { id: 'abx5', pid: 'p4', drug: 'Colistina (Colistimetato)', dosage: '2 MUI q8h', route: 'Inalatoria', startDate: ago(5), status: 'active', indication: 'Aerosol terapia adiuvante VAP' },
+    { id: 'abx6', pid: 'p4', drug: 'Meropenem', dosage: '2g q8h', route: 'EV', startDate: ago(14), endDate: ago(6), status: 'completed', indication: 'Terapia empirica polmonite', stopReason: 'Resistenza documentata (isolato P. aeruginosa CR)' },
+    
+    // p5 - Letto 5 (Sepsi addominale, KPC)
+    { id: 'abx7', pid: 'p5', drug: 'Meropenem/Vaborbactam', dosage: '2g/2g q8h', route: 'EV', startDate: ago(10), status: 'active', indication: 'Sepsi addominale da KPC' },
+    { id: 'abx8', pid: 'p5', drug: 'Piperacillina/Tazobactam', dosage: '4.5g q6h', route: 'EV', startDate: ago(20), endDate: ago(10), status: 'completed', indication: 'Peritonite post-chirurgica', stopReason: 'Fallimento clinico ed isolamento KPC' },
+    
+    // p8 - Letto 8 (Batteriemia MSSA da CVC)
+    { id: 'abx9', pid: 'p8', drug: 'Cefazolina', dosage: '2g q8h', route: 'EV', startDate: ago(4), status: 'active', indication: 'Batteriemia da S. aureus sensibile (MSSA)' },
+    { id: 'abx10', pid: 'p8', drug: 'Vancomicina', dosage: '1g q12h', route: 'EV', startDate: ago(12), endDate: ago(4), status: 'completed', indication: 'Sepsi da CVC empirica', stopReason: 'De-escalation su MSSA identificato' },
+
+    // p10 - Letto 10 (Infezione C. difficile)
+    { id: 'abx11', pid: 'p10', drug: 'Vancomicina', dosage: '125mg q6h', route: 'OS', startDate: ago(3), status: 'active', indication: 'Colite da Clostridioides difficile' },
+    { id: 'abx12', pid: 'p10', drug: 'Ciprofloxacina', dosage: '400mg q12h', route: 'EV', startDate: ago(10), endDate: ago(3), status: 'completed', indication: 'Infezione vie urinarie', stopReason: 'Sospeso per tossicità / insorgenza diarrea da C. difficile' }
   ]
 };

@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useDashboard } from '@/lib/store';
 import { fmt, fmtDMY, daysSince, isPendingCulture } from '@/lib/logic';
+import { Pencil, Trash2 } from 'lucide-react';
 
 export const Queue = () => {
-  const { db, setPid, updateSample } = useDashboard();
+  const { db, setPid, updateSample, deleteSample } = useDashboard();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [quickOrg, setQuickOrg] = useState('');
   const [quickMdro, setQuickMdro] = useState('');
@@ -105,6 +106,28 @@ export const Queue = () => {
                   onClick={() => setPid(p.id)}
                 >
                   Apri scheda letto →
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={() => {
+                    document.dispatchEvent(new CustomEvent('open-edit-sample-modal', { detail: { sample: s } }));
+                  }}
+                  title="Modifica questo esame"
+                >
+                  <Pencil size={13} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon danger"
+                  onClick={() => {
+                    if (confirm(`Eliminare l'esame colturale del ${fmtDMY(s.date)} (${s.site} - Letto ${p.bed})?`)) {
+                      deleteSample(s.id);
+                    }
+                  }}
+                  title="Elimina esame (cestino)"
+                >
+                  <Trash2 size={13} />
                 </button>
               </div>
             </div>

@@ -50,8 +50,23 @@ export interface Patient {
   isDemo?: boolean;
 }
 
+export interface AntibioticTherapy {
+  id: string;
+  pid: string;
+  drug: string;
+  dosage: string;
+  route?: string; // 'EV' | 'OS' | 'Inalatoria' | 'Intratecale' | string
+  startDate: string; // YYYY-MM-DD
+  endDate?: string | null; // YYYY-MM-DD
+  status: 'active' | 'completed' | 'stopped';
+  indication?: string; // es. "VAP", "Sepsi CVC", "Empirica"
+  stopReason?: string; // es. "Completato ciclo", "De-escalation", "Tossicità"
+  note?: string;
+}
+
 export interface DB {
   operator: string;
   patients: Patient[];
   samples: Sample[];
+  antibiotics?: AntibioticTherapy[];
 }

@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { DB, Patient, Sample, CatType } from './types';
+import { DB, Patient, Sample, CatType, AntibioticTherapy } from './types';
 import { seed } from './data';
 import { todayISO } from './logic';
 import { firestore } from './firebase';
@@ -29,7 +29,14 @@ interface DashboardContextType {
   freeBed: (pid: string) => void;
   addSample: (sample: Sample) => void;
   updateSample: (sid: string, updates: Partial<Sample>) => void;
+  deleteSample: (sid: string) => void;
   addPatient: (patient: Patient) => void;
+  updatePatient: (pid: string, updates: Partial<Patient>) => void;
+  deletePatient: (pid: string) => void;
+  addAntibiotic: (abx: Omit<AntibioticTherapy, 'id'> | AntibioticTherapy) => void;
+  updateAntibiotic: (id: string, updates: Partial<AntibioticTherapy>) => void;
+  stopAntibiotic: (id: string, stopReason?: string, endDate?: string) => void;
+  deleteAntibiotic: (id: string) => void;
   exportData: () => void;
   importData: (db: DB) => void;
   resetDemoData: () => void;
@@ -78,6 +85,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
           const remoteData = docSnap.data() as DB;
           if (Array.isArray(remoteData.patients) && Array.isArray(remoteData.samples)) {
             isRemoteUpdate.current = true;
+            if (!remoteData.antibiotics) {
+              remoteData.antibiotics = seed.antibiotics || [];
+            }
             setDb(remoteData);
             try {
               localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
@@ -118,7 +128,12 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
   const updateDb = (fn: (draft: DB) => void) => {
     setDb(prev => {
-      const next = { ...prev, patients: [...prev.patients], samples: [...prev.samples] };
+      const next: DB = { 
+        ...prev, 
+        patients: [...prev.patients], 
+        samples: [...prev.samples],
+        antibiotics: prev.antibiotics ? [...prev.antibiotics] : []
+      };
       fn(next);
       saveToFirestore(next);
       return next;
@@ -190,8 +205,24 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     updateDb(d => {
       d.patients = d.patients.filter(p => p.id !== pid);
       d.samples = d.samples.filter(s => s.pid !== pid);
+      if (d.antibiotics) {
+        d.antibiotics = d.antibiotics.filter(a => a.pid !== pid);
+      }
     });
     updateUi({ pid: null, confirmFree: null });
+  };
+
+  const deletePatient = (pid: string) => {
+    freeBed(pid);
+  };
+
+  const updatePatient = (pid: string, updates: Partial<Patient>) => {
+    updateDb(d => {
+      const p = d.patients.find(x => x.id === pid);
+      if (p) {
+        Object.assign(p, updates);
+      }
+    });
   };
 
   const addSample = (sample: Sample) => {
@@ -214,11 +245,58 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const deleteSample = (sid: string) => {
+    updateDb(d => {
+      d.samples = d.samples.filter(s => s.id !== sid);
+    });
+  };
+
   const addPatient = (patient: Patient) => {
     updateDb(d => {
       d.patients.push(patient);
     });
     updateUi({ pid: patient.id });
+  };
+
+  const addAntibiotic = (abx: Omit<AntibioticTherapy, 'id'> | AntibioticTherapy) => {
+    updateDb(d => {
+      if (!d.antibiotics) d.antibiotics = [];
+      const newAbx: AntibioticTherapy = {
+        ...abx,
+        id: (abx as any).id || ('abx_' + Date.now() + Math.random().toString(36).substring(2, 6)),
+        status: abx.status || 'active'
+      };
+      d.antibiotics.push(newAbx);
+    });
+  };
+
+  const updateAntibiotic = (id: string, updates: Partial<AntibioticTherapy>) => {
+    updateDb(d => {
+      if (!d.antibiotics) return;
+      const a = d.antibiotics.find(x => x.id === id);
+      if (a) {
+        Object.assign(a, updates);
+      }
+    });
+  };
+
+  const stopAntibiotic = (id: string, stopReason?: string, endDate?: string) => {
+    updateDb(d => {
+      if (!d.antibiotics) return;
+      const a = d.antibiotics.find(x => x.id === id);
+      if (a) {
+        a.status = 'completed';
+        a.endDate = endDate || todayISO;
+        if (stopReason) a.stopReason = stopReason;
+      }
+    });
+  };
+
+  const deleteAntibiotic = (id: string) => {
+    updateDb(d => {
+      if (!d.antibiotics) return;
+      d.antibiotics = d.antibiotics.filter(x => x.id !== id);
+    });
   };
 
   const exportData = () => {
@@ -251,7 +329,10 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     <DashboardContext.Provider value={{
       db, ui, syncStatus, setTab, setPid, setConfirmFree, setOperator,
       confirmSample, reopenSample, startIsolation, stopIsolation,
-      toggleNodx, freeBed, addSample, updateSample, addPatient, exportData, importData, resetDemoData
+      toggleNodx, freeBed, addSample, updateSample, deleteSample,
+      addPatient, updatePatient, deletePatient,
+      addAntibiotic, updateAntibiotic, stopAntibiotic, deleteAntibiotic,
+      exportData, importData, resetDemoData
     }}>
       {children}
     </DashboardContext.Provider>

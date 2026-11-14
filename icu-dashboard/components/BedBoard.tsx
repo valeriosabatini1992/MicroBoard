@@ -51,6 +51,7 @@ export const BedBoard = () => {
 
     const isMdro = (s: Sample) => s.result === 'pos' && Boolean(s.mdro);
     const mdros = Array.from(new Set(pos.filter(isMdro).map(s => s.mdro)));
+    const activeAbx = (db.antibiotics || []).filter(a => a.pid === p.id && a.status === 'active');
 
     return (
       <button 
@@ -64,6 +65,14 @@ export const BedBoard = () => {
           <span className="bed-id">{p.code}, {p.age} {p.sex}</span>
         </span>
         <span className="bed-sum">{p.summary}</span>
+
+        {activeAbx.length > 0 && (
+          <div className="bed-abx-line" title={activeAbx.map(a => `${a.drug} (${a.dosage})`).join(', ')}>
+            <span className="bed-abx-tag">
+              💊 {activeAbx.map(a => a.drug).join(' + ')}
+            </span>
+          </div>
+        )}
         
         {displaySamples.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', width: '100%' }}>

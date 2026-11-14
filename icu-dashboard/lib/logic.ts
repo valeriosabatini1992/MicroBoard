@@ -29,6 +29,59 @@ export const TESTS = ['Colturale', 'PCR/biologia molecolare', 'Sierologia', 'Ant
 export const MDROS = ['', 'MRSA', 'VRE', 'ESBL', 'CRE', 'Acinetobacter CR', 'Pseudomonas CR', 'Candida auris'];
 export const ORGS = ['Staphylococcus aureus (MSSA)', 'Staphylococcus aureus MRSA', 'Staphylococcus epidermidis', 'Escherichia coli', 'Klebsiella pneumoniae', 'Pseudomonas aeruginosa', 'Acinetobacter baumannii', 'Enterococcus faecalis', 'Enterococcus faecium', 'Candida albicans', 'Candida auris', 'Streptococcus pneumoniae', 'Bacillus cereus', 'Clostridioides difficile (tossina)', 'West Nile virus (IgM)'];
 
+export const ANTIBIOTIC_LIST = [
+  'Meropenem',
+  'Piperacillina/Tazobactam',
+  'Ceftriaxone',
+  'Cefepime',
+  'Cefotaxime',
+  'Cefazolina',
+  'Vancomicina',
+  'Teicoplanina',
+  'Daptomicina',
+  'Linezolid',
+  'Colistina (Colistimetato)',
+  'Ceftazidime/Avibactam',
+  'Ceftolozano/Tazobactam',
+  'Cefiderocol',
+  'Meropenem/Vaborbactam',
+  'Imipenem/Relebactam',
+  'Tigeciclina',
+  'Ciprofloxacina',
+  'Levofloxacina',
+  'Amikacina',
+  'Gentamicina',
+  'Tobramicina',
+  'Azitromicina',
+  'Claritromicina',
+  'Cotrimossazolo (TMP-SMX)',
+  'Ampicillina/Sulbactam',
+  'Amoxicillina/Acido Clavulanico',
+  'Fluconazolo',
+  'Anidulafungina',
+  'Caspofungina',
+  'Micafungina',
+  'Voriconazolo',
+  'Isavuconazolo',
+  'Amfotericina B liposomiale',
+  'Aciclovir',
+  'Ganciclovir',
+  'Metronidazolo',
+  'Fidaxomicina'
+];
+
+export const ADMINISTRATION_ROUTES = ['EV', 'OS', 'Inalatoria', 'Intratecale', 'Altro'];
+
+export const STOP_REASONS = [
+  'Completato ciclo terapeutico',
+  'De-escalation su antibiogramma',
+  'Escalation per fallimento terapeutico',
+  'Switch molecola (adeguamento clinico)',
+  'Sospeso per tossicità / reazione avversa',
+  'Colture negative (sospensione empirica)',
+  'Altro'
+];
+
 const STERILE = ['Liquor', 'Liquido pleurico'];
 const SURV = ['Tampone rettale', 'Tampone nasale'];
 

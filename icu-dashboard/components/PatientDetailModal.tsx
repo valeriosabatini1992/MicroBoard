@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useDashboard } from '@/lib/store';
 import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture } from '@/lib/logic';
-import { CatType, Sample } from '@/lib/types';
+import { CatType, Sample, AntibioticTherapy } from '@/lib/types';
 import { Chip } from './DashboardComponents';
+import { Pencil, Trash2, Pill, History, Clock, RotateCcw } from 'lucide-react';
 
 const SHORT_CAT: Record<string, string> = {
   sig: '🔴 Infezione',
@@ -19,16 +20,22 @@ export const PatientDetailModal = () => {
     setConfirmFree, 
     startIsolation, 
     stopIsolation, 
-    freeBed, 
+    freeBed,
+    deletePatient,
     confirmSample, 
     reopenSample,
-    updateSample 
+    updateSample,
+    deleteSample,
+    updateAntibiotic,
+    deleteAntibiotic
   } = useDashboard();
 
   const [expandedSampleId, setExpandedSampleId] = useState<string | null>(null);
   const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
   const [quickOrg, setQuickOrg] = useState('');
   const [quickMdro, setQuickMdro] = useState('');
+  const [confirmDeletePatient, setConfirmDeletePatient] = useState(false);
+  const [showAbxHistory, setShowAbxHistory] = useState(true);
 
   // Close on Escape key
   useEffect(() => {
@@ -36,6 +43,7 @@ export const PatientDetailModal = () => {
       if (e.key === 'Escape' && ui.pid) {
         setPid(null);
         setConfirmFree(null);
+        setConfirmDeletePatient(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -46,6 +54,11 @@ export const PatientDetailModal = () => {
 
   const currentPatient = db.patients.find(x => x.id === ui.pid);
   const ss = currentPatient ? db.samples.filter(s => s.pid === currentPatient.id).sort((a, b) => b.date.localeCompare(a.date)) : [];
+  
+  // Antibiotics for current patient
+  const patientAbx = currentPatient ? (db.antibiotics || []).filter(a => a.pid === currentPatient.id) : [];
+  const activeAbx = patientAbx.filter(a => a.status === 'active').sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const pastAbx = patientAbx.filter(a => a.status !== 'active').sort((a, b) => (b.endDate || b.startDate).localeCompare(a.endDate || a.startDate));
 
   const isPos = (s: Sample) => s.result === 'pos';
   const isMdro = (s: Sample) => isPos(s) && Boolean(s.mdro);
@@ -98,7 +111,7 @@ export const PatientDetailModal = () => {
       {/* Backdrop */}
       <div 
         className="modal-backdrop" 
-        onClick={() => { setPid(null); setConfirmFree(null); }}
+        onClick={() => { setPid(null); setConfirmFree(null); setConfirmDeletePatient(false); }}
         aria-hidden="true"
       />
 
@@ -152,7 +165,7 @@ export const PatientDetailModal = () => {
                   key={`nav-bed-${bedNum}`}
                   type="button"
                   className={`bed-nav-item ${isSelected ? 'active' : ''}`}
-                  onClick={() => { setPid(p.id); setConfirmFree(null); }}
+                  onClick={() => { setPid(p.id); setConfirmFree(null); setConfirmDeletePatient(false); }}
                   aria-current={isSelected ? 'true' : undefined}
                 >
                   <div className="nav-bed-num">
@@ -187,7 +200,7 @@ export const PatientDetailModal = () => {
               {/* Ultra-Compact Top Bar */}
               <div className="p-modal-header">
                 <div className="p-modal-header-left">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <h2 id="modal-patient-title" className="p-modal-title">
                       Letto {currentPatient.bed}
                     </h2>
@@ -206,24 +219,73 @@ export const PatientDetailModal = () => {
                     onClick={() => {
                       document.dispatchEvent(new CustomEvent('open-sample-modal', { detail: { pid: currentPatient.id } }));
                     }}
-                    title="Nuovo esame"
+                    title="Nuovo esame microbiologico"
                   >
                     + Esame
                   </button>
 
-                  {ui.confirmFree === currentPatient.id ? (
+                  <button 
+                    type="button" 
+                    className="btn small primary p-btn-add"
+                    style={{ background: '#0F766E', borderColor: '#0F766E' }}
+                    onClick={() => {
+                      document.dispatchEvent(new CustomEvent('open-abx-modal', { detail: { pid: currentPatient.id } }));
+                    }}
+                    title="Nuova terapia antibiotica"
+                  >
+                    + Antibiotico
+                  </button>
+
+                  {/* Pulsante Modifica Paziente */}
+                  <button 
+                    type="button" 
+                    className="btn small p-btn-edit"
+                    onClick={() => {
+                      document.dispatchEvent(new CustomEvent('open-edit-patient-modal', { detail: { patient: currentPatient } }));
+                    }}
+                    title="Modifica anagrafica, letto e diagnosi del paziente"
+                  >
+                    <Pencil size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    Modifica
+                  </button>
+
+                  {/* Pulsante Cestino / Elimina Paziente */}
+                  {confirmDeletePatient ? (
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      <button type="button" className="btn small danger" onClick={() => freeBed(currentPatient.id)}>Conferma</button>
-                      <button type="button" className="btn small" onClick={() => setConfirmFree(null)}>Annulla</button>
+                      <button 
+                        type="button" 
+                        className="btn small danger" 
+                        onClick={() => {
+                          deletePatient(currentPatient.id);
+                          setConfirmDeletePatient(false);
+                        }}
+                      >
+                        Conferma elimina
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn small" 
+                        onClick={() => setConfirmDeletePatient(false)}
+                      >
+                        Annulla
+                      </button>
                     </div>
                   ) : (
-                    <button type="button" className="btn small desktop-only" onClick={() => setConfirmFree(currentPatient.id)}>Libera</button>
+                    <button 
+                      type="button" 
+                      className="btn small danger p-btn-delete" 
+                      onClick={() => setConfirmDeletePatient(true)}
+                      title="Elimina paziente e libera il letto (Cestino)"
+                    >
+                      <Trash2 size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                      Elimina
+                    </button>
                   )}
 
                   <button 
                     type="button" 
                     className="btn-close-modal" 
-                    onClick={() => { setPid(null); setConfirmFree(null); }}
+                    onClick={() => { setPid(null); setConfirmFree(null); setConfirmDeletePatient(false); }}
                     aria-label="Chiudi finestra"
                   >
                     ✕
@@ -260,7 +322,198 @@ export const PatientDetailModal = () => {
                 </div>
               </div>
 
-              {/* Main Body: Ultra-Dense Single-Line Exam Records */}
+              {/* SEZIONE TERAPIA ANTIBIOTICA (IN CORSO & STORICO) */}
+              <div className="p-modal-abx-section">
+                <div className="p-abx-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Pill size={16} color="#0F766E" />
+                    <span style={{ fontWeight: 700, fontSize: '13.5px', color: '#0F172A' }}>Terapia Antibiotica</span>
+                    <span className="abx-badge-count active">
+                      {activeAbx.length} in corso
+                    </span>
+                    {pastAbx.length > 0 && (
+                      <span className="abx-badge-count history">
+                        {pastAbx.length} nello storico
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      className="btn small"
+                      style={{ fontSize: '11.5px', padding: '3px 8px', borderColor: '#0F766E', color: '#0F766E', fontWeight: 600 }}
+                      onClick={() => {
+                        document.dispatchEvent(new CustomEvent('open-abx-modal', { detail: { pid: currentPatient.id } }));
+                      }}
+                    >
+                      + Aggiungi Antibiotico
+                    </button>
+                  </div>
+                </div>
+
+                {/* Blocco 1: Terapia in corso */}
+                <div className="abx-block-active">
+                  <div className="abx-block-label">TERAPIA IN CORSO</div>
+                  {activeAbx.length > 0 ? (
+                    <div className="abx-cards-grid">
+                      {activeAbx.map(a => {
+                        const days = daysSince(a.startDate) + 1;
+                        return (
+                          <div key={a.id} className="abx-card active">
+                            <div className="abx-card-main">
+                              <div className="abx-card-title">
+                                <strong className="abx-drug-name">{a.drug}</strong>
+                                <span className="abx-dosage">{a.dosage}</span>
+                                <span className="abx-route-pill">{a.route || 'EV'}</span>
+                              </div>
+                              <div className="abx-meta-line">
+                                <span className="abx-days-text">
+                                  🟢 In corso da {days} {days === 1 ? 'giorno' : 'giorni'} (dal {fmtDMY(a.startDate)})
+                                </span>
+                                {a.indication && <span className="abx-focus-text">• Focus: <em>{a.indication}</em></span>}
+                              </div>
+                              {a.note && <div className="abx-note-text muted">{a.note}</div>}
+                            </div>
+                            <div className="abx-card-actions">
+                              <button
+                                type="button"
+                                className="btn small"
+                                style={{ fontSize: '11px', padding: '2px 7px', color: '#B45309', borderColor: '#F59E0B', background: '#FFFBEB' }}
+                                onClick={() => {
+                                  document.dispatchEvent(new CustomEvent('open-stop-abx-modal', { detail: { antibiotic: a } }));
+                                }}
+                                title="Concludi o sospendi questa terapia"
+                              >
+                                Sospendi
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                onClick={() => {
+                                  document.dispatchEvent(new CustomEvent('open-abx-modal', { detail: { pid: currentPatient.id, antibiotic: a } }));
+                                }}
+                                title="Modifica terapia antibiotica"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon danger"
+                                onClick={() => {
+                                  if (confirm(`Eliminare definitivamente la terapia ${a.drug}?`)) {
+                                    deleteAntibiotic(a.id);
+                                  }
+                                }}
+                                title="Elimina terapia (cestino)"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="abx-empty-box">
+                      Nessuna terapia antibiotica attualmente in corso.
+                    </div>
+                  )}
+                </div>
+
+                {/* Blocco 2: Storico terapie già eseguite */}
+                <div className="abx-block-history">
+                  <div 
+                    className="abx-block-label history-toggle"
+                    onClick={() => setShowAbxHistory(!showAbxHistory)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <History size={13} />
+                      <span>STORICO TERAPIE GIÀ ESEGUITE ({pastAbx.length})</span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>
+                      {showAbxHistory ? '▲ Nascondi' : '▼ Mostra storico'}
+                    </span>
+                  </div>
+
+                  {showAbxHistory && (
+                    pastAbx.length > 0 ? (
+                      <div className="abx-cards-grid history">
+                        {pastAbx.map(a => {
+                          const startD = a.startDate;
+                          const endD = a.endDate || a.startDate;
+                          const durationDays = Math.max(1, Math.round((new Date(endD + 'T12:00:00').getTime() - new Date(startD + 'T12:00:00').getTime()) / 864e5) + 1);
+                          return (
+                            <div key={a.id} className="abx-card history">
+                              <div className="abx-card-main">
+                                <div className="abx-card-title">
+                                  <strong style={{ color: '#475569' }}>{a.drug}</strong>
+                                  <span className="abx-dosage muted">{a.dosage}</span>
+                                  <span className="abx-route-pill muted">{a.route || 'EV'}</span>
+                                  <span className="badge" style={{ background: '#E2E8F0', color: '#475569', fontSize: '9.5px', padding: '1px 5px' }}>Conclusa</span>
+                                </div>
+                                <div className="abx-meta-line muted">
+                                  <span>
+                                    {fmtDMY(a.startDate)} → {fmtDMY(a.endDate || '')} (durata: {durationDays} gg)
+                                  </span>
+                                  {a.indication && <span>• {a.indication}</span>}
+                                </div>
+                                {a.stopReason && (
+                                  <div className="abx-stop-reason-line">
+                                    <span style={{ fontWeight: 600, color: '#475569' }}>Esito / Sospensione:</span> {a.stopReason}
+                                  </div>
+                                )}
+                                {a.note && <div className="abx-note-text muted">{a.note}</div>}
+                              </div>
+                              <div className="abx-card-actions">
+                                <button
+                                  type="button"
+                                  className="btn small"
+                                  style={{ fontSize: '10.5px', padding: '2px 6px', display: 'flex', alignItems: 'center', gap: '3px' }}
+                                  onClick={() => {
+                                    updateAntibiotic(a.id, { status: 'active', endDate: null, stopReason: undefined });
+                                  }}
+                                  title="Riattiva questa terapia"
+                                >
+                                  <RotateCcw size={11} />
+                                  Riattiva
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-icon"
+                                  onClick={() => {
+                                    document.dispatchEvent(new CustomEvent('open-abx-modal', { detail: { pid: currentPatient.id, antibiotic: a } }));
+                                  }}
+                                  title="Modifica terapia storica"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-icon danger"
+                                  onClick={() => {
+                                    if (confirm(`Eliminare definitivamente dallo storico la terapia ${a.drug}?`)) {
+                                      deleteAntibiotic(a.id);
+                                    }
+                                  }}
+                                  title="Elimina dallo storico (cestino)"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="abx-empty-box muted" style={{ fontSize: '12px' }}>
+                        Nessuna terapia antibiotica precedente in archivio per questo ricovero.
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Main Body: Dense Single-Line Exam Records with Edit & Delete */}
               <div className="p-modal-body">
                 <div className="exam-table-bar">
                   <span style={{ fontWeight: 700, fontSize: '13px' }}>
@@ -368,46 +621,70 @@ export const PatientDetailModal = () => {
                                 )}
                               </div>
 
-                              {/* Actions / Dropdown (Desktop) */}
+                              {/* Actions / Dropdown & Edit / Delete Buttons */}
                               <div className="d-col d-act" onClick={e => e.stopPropagation()}>
-                                {isPositive && (
-                                  <select 
-                                    className="quick-cat-select"
-                                    value={s.status === 'confirmed' ? s.cat! : (s.proposal?.cat || 'sig')}
-                                    onChange={(e) => confirmSample(s.id, e.target.value as CatType)}
-                                    title="Modifica classificazione"
+                                <div className="d-act-inner">
+                                  {isPositive && (
+                                    <select 
+                                      className="quick-cat-select"
+                                      value={s.status === 'confirmed' ? s.cat! : (s.proposal?.cat || 'sig')}
+                                      onChange={(e) => confirmSample(s.id, e.target.value as CatType)}
+                                      title="Modifica classificazione clinica"
+                                    >
+                                      <option value="sig">🔴 Infezione</option>
+                                      <option value="col">🟡 Colonizz.</option>
+                                    </select>
+                                  )}
+
+                                  {isPending && (
+                                    <div style={{ display: 'flex', gap: '3px' }}>
+                                      <button 
+                                        type="button" 
+                                        className="btn small" 
+                                        style={{ fontSize: '10px', padding: '1px 4px', color: 'var(--sig)', borderColor: 'var(--sig)' }}
+                                        onClick={() => handleQuickReferta(s.id)}
+                                        title="Registra germe isolato"
+                                      >
+                                        + Pos
+                                      </button>
+                                      <button 
+                                        type="button" 
+                                        className="btn small" 
+                                        style={{ fontSize: '10px', padding: '1px 4px' }}
+                                        onClick={() => handleSaveNegative(s.id)}
+                                        title="Registra come negativo"
+                                      >
+                                        Neg
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Tasto Modifica Esame */}
+                                  <button
+                                    type="button"
+                                    className="btn-icon"
+                                    onClick={() => {
+                                      document.dispatchEvent(new CustomEvent('open-edit-sample-modal', { detail: { sample: s } }));
+                                    }}
+                                    title="Modifica esame microbiologico"
                                   >
-                                    <option value="sig">🔴 Infezione</option>
-                                    <option value="col">🟡 Colonizz.</option>
-                                  </select>
-                                )}
+                                    <Pencil size={13} />
+                                  </button>
 
-                                {isPending && (
-                                  <div style={{ display: 'flex', gap: '3px' }}>
-                                    <button 
-                                      type="button" 
-                                      className="btn small" 
-                                      style={{ fontSize: '10.5px', padding: '1px 5px', color: 'var(--sig)', borderColor: 'var(--sig)' }}
-                                      onClick={() => handleQuickReferta(s.id)}
-                                      title="Registra germe isolato"
-                                    >
-                                      + Pos
-                                    </button>
-                                    <button 
-                                      type="button" 
-                                      className="btn small" 
-                                      style={{ fontSize: '10.5px', padding: '1px 5px' }}
-                                      onClick={() => handleSaveNegative(s.id)}
-                                      title="Registra come negativo"
-                                    >
-                                      Neg
-                                    </button>
-                                  </div>
-                                )}
-
-                                {isNegative && (
-                                  <span className="muted" style={{ fontSize: '11px' }}>—</span>
-                                )}
+                                  {/* Tasto Cestino / Cancella Esame */}
+                                  <button
+                                    type="button"
+                                    className="btn-icon danger"
+                                    onClick={() => {
+                                      if (confirm(`Eliminare l'esame del ${fmtDMY(s.date)} (${s.test} - ${s.org || s.label || s.site})?`)) {
+                                        deleteSample(s.id);
+                                      }
+                                    }}
+                                    title="Elimina esame (cestino)"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Expand Chevron Icon */}
@@ -487,6 +764,32 @@ export const PatientDetailModal = () => {
                                       Esito negativo refertato il {fmtDMY(s.date)}. Nessuna crescita microbica.
                                     </div>
                                   )}
+
+                                  {/* Mobile-friendly Full Edit / Delete Bar */}
+                                  <div className="drawer-actions-row">
+                                    <button 
+                                      type="button" 
+                                      className="btn small"
+                                      onClick={() => {
+                                        document.dispatchEvent(new CustomEvent('open-edit-sample-modal', { detail: { sample: s } }));
+                                      }}
+                                    >
+                                      <Pencil size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                                      Modifica tutti i dati esame
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      className="btn small danger"
+                                      onClick={() => {
+                                        if (confirm(`Eliminare definitivamente l'esame del ${fmtDMY(s.date)} (${s.test} - ${s.org || s.label || s.site})?`)) {
+                                          deleteSample(s.id);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                                      Elimina esame (Cestino)
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             )}

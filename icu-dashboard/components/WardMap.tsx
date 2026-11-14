@@ -98,47 +98,88 @@ const getIsolationType = (p?: Patient | null): IsolationType | null => {
 // Word-wrapping function with strict boundaries and ellipsis
 function wrapDiagnosis(text: string, maxCharsPerLine: number, maxLines: number): string[] {
   if (!text) return [];
-  const words = text.trim().split(/\s+/);
+  const rawWords = text.trim().split(/\s+/);
+  const words: string[] = [];
+
+  for (const w of rawWords) {
+    if (w.includes('-') && w.length > maxCharsPerLine) {
+      const parts = w.split('-');
+      parts.forEach((p, idx) => {
+        const token = idx < parts.length - 1 ? p + '-' : p;
+        if (token.length > maxCharsPerLine) {
+          for (let i = 0; i < token.length; i += maxCharsPerLine) {
+            words.push(token.slice(i, i + maxCharsPerLine));
+          }
+        } else {
+          words.push(token);
+        }
+      });
+    } else if (w.includes('/') && w.length > maxCharsPerLine) {
+      const parts = w.split('/');
+      parts.forEach((p, idx) => {
+        const token = idx < parts.length - 1 ? p + '/' : p;
+        if (token.length > maxCharsPerLine) {
+          for (let i = 0; i < token.length; i += maxCharsPerLine) {
+            words.push(token.slice(i, i + maxCharsPerLine));
+          }
+        } else {
+          words.push(token);
+        }
+      });
+    } else if (w.length > maxCharsPerLine) {
+      for (let i = 0; i < w.length; i += maxCharsPerLine) {
+        words.push(w.slice(i, i + maxCharsPerLine));
+      }
+    } else {
+      words.push(w);
+    }
+  }
+
   const lines: string[] = [];
-  let currentLine = '';
+  let cur = '';
 
   for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const w = words[i];
+    const test = cur ? (cur.endsWith('-') || cur.endsWith('/') ? cur + w : cur + ' ' + w) : w;
 
-    if (testLine.length <= maxCharsPerLine) {
-      currentLine = testLine;
+    if (test.length <= maxCharsPerLine) {
+      cur = test;
     } else {
-      if (currentLine) {
-        lines.push(currentLine);
+      if (cur) {
+        lines.push(cur);
         if (lines.length >= maxLines) {
-          let last = lines[lines.length - 1];
-          if (last.length > maxCharsPerLine - 2) {
-            last = last.slice(0, maxCharsPerLine - 3);
-          }
-          lines[lines.length - 1] = last.trimEnd() + '…';
-          return lines;
+          return enforceMaxCharsAndTruncate(lines, maxCharsPerLine);
         }
-        currentLine = word;
-      } else {
-        lines.push(word.slice(0, maxCharsPerLine - 1) + '…');
-        if (lines.length >= maxLines) return lines;
-        currentLine = '';
       }
+      cur = w;
     }
   }
 
-  if (currentLine && lines.length < maxLines) {
-    lines.push(currentLine);
-  } else if (currentLine && lines.length === maxLines) {
-    let last = lines[lines.length - 1];
-    if (last.length > maxCharsPerLine - 2) {
-      last = last.slice(0, maxCharsPerLine - 3);
+  if (cur) {
+    if (lines.length < maxLines) {
+      lines.push(cur);
+    } else {
+      return enforceMaxCharsAndTruncate(lines, maxCharsPerLine);
     }
-    lines[lines.length - 1] = last.trimEnd() + '…';
   }
 
-  return lines;
+  return enforceMaxCharsAndTruncate(lines, maxCharsPerLine);
+}
+
+function enforceMaxCharsAndTruncate(lines: string[], maxChars: number): string[] {
+  if (lines.length === 0) return [];
+  return lines.map((l, idx) => {
+    if (idx === lines.length - 1) {
+      if (l.length > maxChars) {
+        return l.slice(0, Math.max(1, maxChars - 1)).trimEnd() + '…';
+      }
+      return l;
+    }
+    if (l.length > maxChars) {
+      return l.slice(0, maxChars);
+    }
+    return l;
+  });
 }
 
 export const WardMap = () => {
@@ -184,6 +225,11 @@ export const WardMap = () => {
             <pattern id="arch-dots" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse">
               <circle cx="2" cy="2" r="0.9" fill="#CBD5E1" opacity="0.65" />
             </pattern>
+            {layout.beds.map(b => (
+              <clipPath key={`clip-${b.id}`} id={`clip-bed-${b.id}`}>
+                <rect x={b.x + 1} y={b.y + 1} width={b.w - 2} height={b.h - 2} />
+              </clipPath>
+            ))}
           </defs>
 
           {/* Ward background */}
@@ -244,7 +290,7 @@ export const WardMap = () => {
             if (isOpen) {
               const textStartX = b.x + 34 + (isoCfg ? 27 : 0);
               const availableTextWidth = b.x + b.w - textStartX - 8;
-              const maxChars = Math.max(10, Math.floor(availableTextWidth / 6.2));
+              const maxChars = Math.max(8, Math.floor(availableTextWidth / 7.2));
               const wrapped = wrapDiagnosis(diagnosis, maxChars, 1);
 
               return (
@@ -286,17 +332,19 @@ export const WardMap = () => {
                     </g>
                   )}
 
-                  {/* Patient Diagnosis */}
-                  {wrapped.map((line, i) => (
-                    <text 
-                      key={i} 
-                      x={textStartX} 
-                      y={b.y + b.h / 2 + 4} 
-                      className="wm-dx-text"
-                    >
-                      {line}
-                    </text>
-                  ))}
+                  {/* Patient Diagnosis strictly clipped */}
+                  <g clipPath={`url(#clip-bed-${b.id})`}>
+                    {wrapped.map((line, i) => (
+                      <text 
+                        key={i} 
+                        x={textStartX} 
+                        y={b.y + b.h / 2 + 4} 
+                        className="wm-dx-text"
+                      >
+                        {line}
+                      </text>
+                    ))}
+                  </g>
                 </g>
               );
             }
@@ -304,13 +352,13 @@ export const WardMap = () => {
             // Standard single rooms (1-9, 9bis, 14, 16, 18)
             const badgeX = b.x + b.w - 29;
             const badgeY = b.y + 8;
-            const textMarginX = b.x + 11;
-            const maxLineWidth = b.w - 22;
-            const maxCharsPerLine = Math.max(14, Math.floor(maxLineWidth / 6.4));
+            const textMarginX = b.x + 8;
+            const maxLineWidth = b.w - 18;
+            const maxCharsPerLine = Math.max(9, Math.floor(maxLineWidth / 7.2));
             const maxLines = b.h > 100 ? 4 : b.h > 80 ? 3 : 2;
             const wrapped = wrapDiagnosis(diagnosis, maxCharsPerLine, maxLines);
-            const startTextY = b.y + 40;
-            const lineHeight = 14.5;
+            const startTextY = b.y + 38;
+            const lineHeight = 13.5;
 
             return (
               <g
@@ -351,8 +399,8 @@ export const WardMap = () => {
                   </g>
                 )}
 
-                {/* Patient Diagnosis strictly wrapped */}
-                <g className="wm-dx-group">
+                {/* Patient Diagnosis strictly wrapped & clipped to bed boundary */}
+                <g className="wm-dx-group" clipPath={`url(#clip-bed-${b.id})`}>
                   {wrapped.map((line, idx) => (
                     <text
                       key={idx}
