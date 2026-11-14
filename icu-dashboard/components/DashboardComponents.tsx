@@ -4,7 +4,8 @@ import { LABEL, SHORT } from '@/lib/logic';
 import { CatType, Sample } from '@/lib/types';
 import { useDashboard } from '@/lib/store';
 
-export const Chip = ({ cat }: { cat: CatType }) => {
+export const Chip = ({ cat }: { cat?: CatType | null }) => {
+  if (!cat) return null;
   return <span className={`chip ${cat}`}>{LABEL[cat]}</span>;
 };
 

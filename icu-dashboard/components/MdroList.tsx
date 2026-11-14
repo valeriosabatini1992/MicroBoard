@@ -87,7 +87,7 @@ export const MdroList = () => {
                     <td>{s.site}</td>
                     <td>{fmt(s.date)}</td>
                     <td>
-                      <Chip cat={s.status === 'confirmed' ? s.cat! : s.proposal!.cat} />
+                      <Chip cat={s.status === 'confirmed' ? s.cat : s.proposal?.cat} />
                       {s.status === 'pending' && ' '}<span className="tag pending" style={{display: s.status === 'pending' ? 'inline-block' : 'none'}}>da rivedere</span>
                     </td>
                   </tr>
