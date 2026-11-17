@@ -1,4 +1,5 @@
 import { Sample, Proposal, CatType } from './types';
+export { calculateSaps2Mortality, getAgePoints } from './saps2';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 export const isoOf = (d: Date) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -27,7 +28,41 @@ export const BEDS = 12;
 export const SITES = ['Sangue', 'Liquor', 'Liquido pleurico', 'Aspirato tracheale', 'BAL', 'Urine', 'Tampone rettale', 'Tampone nasale', 'Siero', 'Feci', 'Ferita o altro'];
 export const TESTS = ['Colturale', 'PCR/biologia molecolare', 'Sierologia', 'Antigene', 'Tossina'];
 export const MDROS = ['', 'MRSA', 'VRE', 'ESBL', 'CRE', 'Acinetobacter CR', 'Pseudomonas CR', 'Candida auris'];
-export const ORGS = ['Staphylococcus aureus (MSSA)', 'Staphylococcus aureus MRSA', 'Staphylococcus epidermidis', 'Escherichia coli', 'Klebsiella pneumoniae', 'Pseudomonas aeruginosa', 'Acinetobacter baumannii', 'Enterococcus faecalis', 'Enterococcus faecium', 'Candida albicans', 'Candida auris', 'Streptococcus pneumoniae', 'Bacillus cereus', 'Clostridioides difficile (tossina)', 'West Nile virus (IgM)'];
+export const CLASSIC_DEVICES = ['CVC', 'Art', 'CV', 'PICC', 'Midline'] as const;
+
+export const ORGS = [
+  'Staphylococcus aureus (MSSA)',
+  'Staphylococcus aureus MRSA',
+  'Staphylococcus epidermidis',
+  'Escherichia coli',
+  'Klebsiella pneumoniae',
+  'Pseudomonas aeruginosa',
+  'Acinetobacter baumannii',
+  'Enterococcus faecalis',
+  'Enterococcus faecium',
+  'Stenotrophomonas maltophilia',
+  'Serratia marcescens',
+  'Enterobacter cloacae',
+  'Proteus mirabilis',
+  'Morganella morganii',
+  'Candida albicans',
+  'Candida glabrata',
+  'Candida parapsilosis',
+  'Candida auris',
+  'Aspergillus fumigatus',
+  'Streptococcus pneumoniae',
+  'Streptococcus pyogenes',
+  'Streptococcus agalactiae',
+  'Bacillus cereus',
+  'Clostridioides difficile (tossina)',
+  'Herpes simplex virus (HSV-1)',
+  'Herpes simplex virus (HSV-2)',
+  'Cytomegalovirus (CMV)',
+  'Epstein-Barr virus (EBV)',
+  'Varicella-Zoster virus (VZV)',
+  'West Nile virus (IgM)',
+  'Legionella pneumophila'
+];
 
 export const ANTIBIOTIC_LIST = [
   'Meropenem',

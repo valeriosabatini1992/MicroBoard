@@ -44,6 +44,7 @@ export const Modals = () => {
   const [aAge, setAAge] = useState('');
   const [aSex, setASex] = useState('M');
   const [aSum, setASum] = useState('');
+  const [aSaps2, setASaps2] = useState('');
   const [aErr, setAErr] = useState('');
 
   // Edit Patient form state
@@ -55,6 +56,7 @@ export const Modals = () => {
   const [epAdmitted, setEpAdmitted] = useState(todayISO);
   const [epSum, setEpSum] = useState('');
   const [epDx, setEpDx] = useState('');
+  const [epSaps2, setEpSaps2] = useState('');
   const [epIsoType, setEpIsoType] = useState('Nessuno');
   const [epIsoReason, setEpIsoReason] = useState('');
   const [epIsoSince, setEpIsoSince] = useState(todayISO);
@@ -114,7 +116,7 @@ export const Modals = () => {
 
     const handleAdmit = (e: any) => {
       setModalBed(e.detail?.bed || 0);
-      setACode(''); setAAge(''); setASex('M'); setASum(''); setAErr('');
+      setACode(''); setAAge(''); setASex('M'); setASum(''); setASaps2(''); setAErr('');
       setActiveModal('admit');
     };
 
@@ -129,6 +131,7 @@ export const Modals = () => {
       setEpAdmitted(p.admitted || todayISO);
       setEpSum(p.summary || '');
       setEpDx(p.dx || '');
+      setEpSaps2(p.saps2 != null ? String(p.saps2) : '');
       setEpIsoType(p.iso?.type || 'Nessuno');
       setEpIsoReason(p.iso?.reason || '');
       setEpIsoSince(p.iso?.since || todayISO);
@@ -268,7 +271,8 @@ export const Modals = () => {
 
     addPatient({
       id: 'p' + Date.now(), bed: modalBed, code, age, sex: aSex, admitted: todayISO,
-      summary: aSum.trim() || 'Quadro clinico non indicato', dx: '', iso: null, nodx: false
+      summary: aSum.trim() || 'Quadro clinico non indicato', dx: '', iso: null, nodx: false,
+      saps2: aSaps2 ? parseInt(aSaps2, 10) : null
     });
     close();
   };
@@ -301,7 +305,8 @@ export const Modals = () => {
       summary: epSum.trim() || 'Quadro clinico non indicato',
       dx: epDx.trim(),
       iso: isoData,
-      nodx: epNodx
+      nodx: epNodx,
+      saps2: epSaps2 ? parseInt(epSaps2, 10) : null
     });
     close();
   };
@@ -519,6 +524,36 @@ export const Modals = () => {
                   <option>F</option><option>M</option>
                 </select>
               </label>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', width: '100%' }}>
+                <label className="fld" style={{ flex: 1 }}>Score SAPS II (opzionale)
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="163" 
+                    placeholder="es. 44 (0 - 163 pt)" 
+                    value={aSaps2} 
+                    onChange={e => setASaps2(e.target.value)} 
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ marginBottom: '12px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                  onClick={() => {
+                    const parsedAge = parseInt(aAge, 10);
+                    document.dispatchEvent(new CustomEvent('open-saps-calculator', {
+                      detail: {
+                        age: !isNaN(parsedAge) ? parsedAge : undefined,
+                        onApply: (score: number) => setASaps2(String(score))
+                      }
+                    }));
+                  }}
+                >
+                  🧮 Calcola SAPS II
+                </button>
+              </div>
+
               <label className="fld full">Quadro clinico<input type="text" placeholder="es. Polmonite grave, ventilazione meccanica" value={aSum} onChange={e => setASum(e.target.value)} /></label>
             </div>
             <div className="m-foot">
@@ -587,6 +622,37 @@ export const Modals = () => {
               <label className="fld full">Diagnosi microbiologica / Eziologica
                 <input type="text" placeholder="es. VAP da Pseudomonas aeruginosa CR" value={epDx} onChange={e => setEpDx(e.target.value)} />
               </label>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', width: '100%' }}>
+                <label className="fld" style={{ flex: 1 }}>Score di gravità SAPS II (opzionale)
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="163" 
+                    placeholder="es. 45 (0 - 163 pt)" 
+                    value={epSaps2} 
+                    onChange={e => setEpSaps2(e.target.value)} 
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ marginBottom: '12px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                  onClick={() => {
+                    const parsedAge = parseInt(epAge, 10);
+                    document.dispatchEvent(new CustomEvent('open-saps-calculator', {
+                      detail: {
+                        patientId: editPatientId,
+                        age: !isNaN(parsedAge) ? parsedAge : undefined,
+                        currentScore: epSaps2 ? parseInt(epSaps2, 10) : undefined,
+                        onApply: (score: number) => setEpSaps2(String(score))
+                      }
+                    }));
+                  }}
+                >
+                  🧮 Calcola SAPS II
+                </button>
+              </div>
 
               <label className="check full" style={{ marginTop: '4px', background: '#F8FAFC', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
                 <input 

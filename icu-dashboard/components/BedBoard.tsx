@@ -52,6 +52,7 @@ export const BedBoard = () => {
     const isMdro = (s: Sample) => s.result === 'pos' && Boolean(s.mdro);
     const mdros = Array.from(new Set(pos.filter(isMdro).map(s => s.mdro)));
     const activeAbx = (db.antibiotics || []).filter(a => a.pid === p.id && a.status === 'active');
+    const patientDevices = (db.devices || []).filter(d => d.pid === p.id && !d.removalDate);
 
     return (
       <button 
@@ -62,9 +63,26 @@ export const BedBoard = () => {
       >
         <span className="bed-head">
           <span className="bed-no">Letto {n}</span>
-          <span className="bed-id">{p.code}, {p.age} {p.sex}</span>
+          <span className="bed-id">
+            {p.code}, {p.age} {p.sex}
+            {p.saps2 != null && (
+              <span className="bed-saps-tag" title={`SAPS II: ${p.saps2}`}>
+                SAPS {p.saps2}
+              </span>
+            )}
+          </span>
         </span>
         <span className="bed-sum">{p.summary}</span>
+
+        {patientDevices.length > 0 && (
+          <div className="bed-devices-line" title={patientDevices.map(d => `${d.type} (${d.insertionDate})`).join(', ')}>
+            {patientDevices.map(d => (
+              <span key={d.id} className="bed-device-tag">
+                {d.type}
+              </span>
+            ))}
+          </div>
+        )}
 
         {activeAbx.length > 0 && (
           <div className="bed-abx-line" title={activeAbx.map(a => `${a.drug} (${a.dosage})`).join(', ')}>

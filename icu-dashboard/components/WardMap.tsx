@@ -251,6 +251,9 @@ export const WardMap = () => {
             const isHighlighted = Boolean(activeFilter && isoType === activeFilter);
 
             const diagnosis = p ? (p.dx?.trim() || p.summary?.trim() || 'Nessuna diagnosi registrata') : '';
+            const pDevices = p ? (db.devices || []).filter(d => d.pid === p.id && !d.removalDate) : [];
+            const devInfo = pDevices.length > 0 ? ` · Devices: ${pDevices.map(d => d.type).join(', ')}` : '';
+            const sapsInfo = p?.saps2 != null ? ` · SAPS II: ${p.saps2}` : '';
 
             if (!p) {
               return (
@@ -303,7 +306,7 @@ export const WardMap = () => {
                   onClick={() => handleBedClick(b.id, p.id)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleBedClick(b.id, p.id); }}
                 >
-                  <title>{`Letto ${b.label} · ${diagnosis}${isoType ? ` · Isolamento ${isoType}` : ''} (Clicca per dettagli)`}</title>
+                  <title>{`Letto ${b.label} · ${diagnosis}${sapsInfo}${devInfo}${isoType ? ` · Isolamento ${isoType}` : ''} (Clicca per dettagli)`}</title>
                   
                   {/* Base Bed Card - Straight 90° corners */}
                   <rect 
@@ -370,7 +373,7 @@ export const WardMap = () => {
                 onClick={() => handleBedClick(b.id, p.id)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleBedClick(b.id, p.id); }}
               >
-                <title>{`Letto ${b.label} · ${diagnosis}${isoType ? ` · Isolamento ${isoType}` : ''} (Clicca per dettagli)`}</title>
+                <title>{`Letto ${b.label} · ${diagnosis}${sapsInfo}${devInfo}${isoType ? ` · Isolamento ${isoType}` : ''} (Clicca per dettagli)`}</title>
                 
                 {/* Base Bed Card - Straight 90° corners */}
                 <rect 

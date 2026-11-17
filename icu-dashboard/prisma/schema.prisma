@@ -18,6 +18,7 @@ model Patient {
   isolationType       String    @default("NONE") // NONE, CONTACT, DROPLET, AIRBORNE
   episodeStartDate    DateTime?
   notes               String?
+  saps2               Int?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

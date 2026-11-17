@@ -1,10 +1,10 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useDashboard } from '@/lib/store';
-import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture } from '@/lib/logic';
-import { CatType, Sample, AntibioticTherapy } from '@/lib/types';
+import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture, todayISO, CLASSIC_DEVICES, ORGS, calculateSaps2Mortality } from '@/lib/logic';
+import { CatType, Sample, AntibioticTherapy, PatientDevice } from '@/lib/types';
 import { Chip } from './DashboardComponents';
-import { Pencil, Trash2, Pill, History, Clock, RotateCcw } from 'lucide-react';
+import { Pencil, Trash2, Pill, History, Clock, RotateCcw, Calculator, Plus } from 'lucide-react';
 
 const SHORT_CAT: Record<string, string> = {
   sig: '🔴 Infezione',
@@ -27,7 +27,9 @@ export const PatientDetailModal = () => {
     updateSample,
     deleteSample,
     updateAntibiotic,
-    deleteAntibiotic
+    deleteAntibiotic,
+    addDevice,
+    deleteDevice
   } = useDashboard();
 
   const [expandedSampleId, setExpandedSampleId] = useState<string | null>(null);
@@ -36,6 +38,12 @@ export const PatientDetailModal = () => {
   const [quickMdro, setQuickMdro] = useState('');
   const [confirmDeletePatient, setConfirmDeletePatient] = useState(false);
   const [showAbxHistory, setShowAbxHistory] = useState(true);
+
+  // Device Management State
+  const [showAddDevice, setShowAddDevice] = useState(false);
+  const [selectedDevicePreset, setSelectedDevicePreset] = useState('');
+  const [customDeviceName, setCustomDeviceName] = useState('');
+  const [deviceDate, setDeviceDate] = useState(todayISO);
 
   // Close on Escape key
   useEffect(() => {
@@ -59,6 +67,28 @@ export const PatientDetailModal = () => {
   const patientAbx = currentPatient ? (db.antibiotics || []).filter(a => a.pid === currentPatient.id) : [];
   const activeAbx = patientAbx.filter(a => a.status === 'active').sort((a, b) => b.startDate.localeCompare(a.startDate));
   const pastAbx = patientAbx.filter(a => a.status !== 'active').sort((a, b) => (b.endDate || b.startDate).localeCompare(a.endDate || a.startDate));
+
+  // Devices for current patient
+  const patientDevices = currentPatient 
+    ? (db.devices || []).filter(d => d.pid === currentPatient.id && !d.removalDate).sort((a, b) => b.insertionDate.localeCompare(a.insertionDate))
+    : [];
+
+  const handleAddDevice = () => {
+    if (!currentPatient) return;
+    const finalType = (customDeviceName.trim() || selectedDevicePreset).trim();
+    if (!finalType) {
+      alert('Seleziona o digita il tipo di dispositivo (es. CVC, Art, CV).');
+      return;
+    }
+    addDevice({
+      pid: currentPatient.id,
+      type: finalType,
+      insertionDate: deviceDate || todayISO,
+    });
+    setCustomDeviceName('');
+    setSelectedDevicePreset('');
+    setShowAddDevice(false);
+  };
 
   const isPos = (s: Sample) => s.result === 'pos';
   const isMdro = (s: Sample) => isPos(s) && Boolean(s.mdro);
@@ -209,6 +239,38 @@ export const PatientDetailModal = () => {
                     <span className="muted p-patient-meta">
                       {currentPatient.age}a {currentPatient.sex} • Ricoverato {fmtShortDate(currentPatient.admitted)} (gg {daysSince(currentPatient.admitted) + 1})
                     </span>
+
+                    {/* Score di gravità SAPS II */}
+                    {typeof currentPatient.saps2 === 'number' ? (
+                      <button
+                        type="button"
+                        className="p-header-saps-chip"
+                        onClick={() => {
+                          document.dispatchEvent(new CustomEvent('open-saps-calculator', { 
+                            detail: { patientId: currentPatient.id, currentScore: currentPatient.saps2, age: currentPatient.age } 
+                          }));
+                        }}
+                        title={`SAPS II: ${currentPatient.saps2} punti (Mortalità ospedaliera stimata: ~${calculateSaps2Mortality(currentPatient.saps2)}%). Clicca per ricalcolare.`}
+                      >
+                        <span className="saps-label">SAPS II</span>
+                        <span className="saps-score">{currentPatient.saps2}</span>
+                        <span className="saps-mort">({calculateSaps2Mortality(currentPatient.saps2)}% mort.)</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="p-btn-add-saps"
+                        onClick={() => {
+                          document.dispatchEvent(new CustomEvent('open-saps-calculator', { 
+                            detail: { patientId: currentPatient.id, age: currentPatient.age } 
+                          }));
+                        }}
+                        title="Calcola o assegna score di gravità SAPS II"
+                      >
+                        <Calculator size={11.5} style={{ marginRight: '3px' }} />
+                        + SAPS II
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -321,6 +383,121 @@ export const PatientDetailModal = () => {
                   )}
                 </div>
               </div>
+
+              {/* STRIP DISPOSITIVI INVASIVI (DEVICE) - ULTRA COMPATTO */}
+              <div className="p-modal-devices-bar">
+                <div className="p-devices-left">
+                  <span className="p-devices-title">Device in situ:</span>
+                  {patientDevices.length === 0 ? (
+                    <span className="muted p-devices-empty">Nessun dispositivo registrato</span>
+                  ) : (
+                    <div className="p-devices-chips">
+                      {patientDevices.map(d => (
+                        <span 
+                          key={d.id} 
+                          className="device-chip" 
+                          title={`Posizionato il ${fmtDMY(d.insertionDate)} (${daysSince(d.insertionDate) + 1} giorni fa)`}
+                        >
+                          <span className="device-type">{d.type}</span>
+                          <span className="device-date">{fmtShortDate(d.insertionDate)}</span>
+                          <span className="device-days">(gg {daysSince(d.insertionDate) + 1})</span>
+                          <button
+                            type="button"
+                            className="btn-dev-del"
+                            onClick={() => deleteDevice(d.id)}
+                            title={`Rimuovi dispositivo ${d.type}`}
+                            aria-label={`Rimuovi dispositivo ${d.type}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-devices-right">
+                  <button
+                    type="button"
+                    className="btn small p-btn-add-device"
+                    onClick={() => {
+                      setShowAddDevice(prev => !prev);
+                      setDeviceDate(todayISO);
+                      setSelectedDevicePreset('');
+                      setCustomDeviceName('');
+                    }}
+                    title="Aggiungi dispositivo invasivo (CVC, Art, CV, PICC, Midline o personalizzato)"
+                  >
+                    + Device
+                  </button>
+                </div>
+              </div>
+
+              {/* Form Rapido Aggiunta Device (Inline Popover) */}
+              {showAddDevice && (
+                <div className="p-device-add-panel">
+                  <div className="p-device-presets">
+                    <span className="muted" style={{ fontSize: '11px', fontWeight: 600 }}>Classici:</span>
+                    {CLASSIC_DEVICES.map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className={`device-preset-btn ${selectedDevicePreset === preset ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedDevicePreset(preset);
+                          setCustomDeviceName(preset);
+                        }}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="p-device-inputs-row">
+                    <input
+                      type="text"
+                      placeholder="Oppure inserisci dispositivo..."
+                      value={customDeviceName}
+                      onChange={e => {
+                        setCustomDeviceName(e.target.value);
+                        if (!CLASSIC_DEVICES.includes(e.target.value as any)) {
+                          setSelectedDevicePreset('');
+                        }
+                      }}
+                      className="device-text-input"
+                      autoFocus
+                    />
+                    <label className="device-date-label">
+                      Data posiz.:
+                      <input
+                        type="date"
+                        value={deviceDate}
+                        onChange={e => setDeviceDate(e.target.value)}
+                        className="device-date-input"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="btn small primary"
+                      onClick={handleAddDevice}
+                      style={{ padding: '3px 10px', fontSize: '11.5px', fontWeight: 700 }}
+                    >
+                      Aggiungi
+                    </button>
+                    <button
+                      type="button"
+                      className="btn small"
+                      onClick={() => {
+                        setShowAddDevice(false);
+                        setCustomDeviceName('');
+                        setSelectedDevicePreset('');
+                      }}
+                      style={{ padding: '3px 8px', fontSize: '11.5px' }}
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* SEZIONE TERAPIA ANTIBIOTICA (IN CORSO & STORICO) */}
               <div className="p-modal-abx-section">
@@ -803,8 +980,14 @@ export const PatientDetailModal = () => {
                                   placeholder="Nome germe (es. S. aureus)"
                                   value={quickOrg}
                                   onChange={e => setQuickOrg(e.target.value)}
+                                  list="patient-modal-orgs"
                                   style={{ padding: '3px 7px', fontSize: '12.5px', borderRadius: '4px', border: '1px solid var(--line-strong)', flex: 1 }}
                                 />
+                                <datalist id="patient-modal-orgs">
+                                  {ORGS.map(o => (
+                                    <option key={o} value={o} />
+                                  ))}
+                                </datalist>
                                 <select 
                                   value={quickMdro} 
                                   onChange={e => setQuickMdro(e.target.value)}

@@ -7,6 +7,7 @@ import { Queue } from '@/components/Queue';
 import { MdroList } from '@/components/MdroList';
 import { PatientDetailModal } from '@/components/PatientDetailModal';
 import { Modals } from '@/components/Modals';
+import { Saps2CalculatorModal } from '@/components/Saps2CalculatorModal';
 import { AuthGate, logoutApp } from '@/components/AuthGate';
 import { isPendingCulture } from '@/lib/logic';
 
@@ -165,6 +166,7 @@ const DashboardContent = () => {
       </div>
       <PatientDetailModal />
       <Modals />
+      <Saps2CalculatorModal />
     </div>
   );
 };

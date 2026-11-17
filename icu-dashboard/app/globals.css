@@ -1718,6 +1718,503 @@ tr:last-child td { border-bottom: 0; }
   }
 }
 
+/* ===== SAPS II Header Chip & Tags ===== */
+.p-header-saps-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1E40AF;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.3;
+}
+.p-header-saps-chip:hover {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+
+.p-header-saps-chip .saps-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #3B82F6;
+}
+
+.p-header-saps-chip .saps-score {
+  font-weight: 800;
+  color: #1E3A8A;
+  font-size: 12.5px;
+}
+
+.p-header-saps-chip .saps-mort {
+  font-size: 11px;
+  color: #2563EB;
+  font-weight: 500;
+}
+
+.p-btn-add-saps {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #F8FAFC;
+  border: 1px dashed #94A3B8;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.3;
+}
+.p-btn-add-saps:hover {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+  color: #1D4ED8;
+}
+
+.bed-saps-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1E40AF;
+  background: #DBEAFE;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.bed-devices-line {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin: 2px 0 3px;
+  width: 100%;
+}
+
+.bed-device-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #0369A1;
+  background: #E0F2FE;
+  border: 1px solid #BAE6FD;
+  border-radius: 3px;
+  padding: 0.5px 5px;
+  line-height: 1.3;
+}
+
+/* ===== Sezione Dispositivi Invasivi (Device) ===== */
+.p-modal-devices-bar {
+  padding: 4px 14px;
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  font-size: 11.5px;
+  flex-wrap: wrap;
+}
+
+.p-devices-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.p-devices-title {
+  font-weight: 700;
+  color: #334155;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+
+.p-devices-empty {
+  font-style: italic;
+  font-size: 11px;
+  color: #64748B;
+}
+
+.p-devices-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.device-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #1E293B;
+  font-size: 11px;
+  line-height: 1.3;
+  transition: all 0.15s ease;
+}
+.device-chip:hover {
+  background: #E2E8F0;
+  border-color: #94A3B8;
+}
+
+.device-chip .device-type {
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.device-chip .device-date {
+  color: #64748B;
+  font-size: 10.5px;
+}
+
+.device-chip .device-days {
+  font-weight: 600;
+  color: #0284C7;
+  font-size: 10.5px;
+}
+
+.device-chip .btn-dev-del {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 1px;
+  margin-left: 2px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.device-chip .btn-dev-del:hover {
+  color: #DC2626;
+  background: #FEE2E2;
+}
+
+.p-btn-add-device {
+  font-size: 11px;
+  padding: 1.5px 7px;
+  border-color: #0284C7;
+  color: #0284C7;
+  font-weight: 700;
+  background: #F0F9FF;
+  line-height: 1.3;
+}
+.p-btn-add-device:hover {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+/* Form Rapido Aggiunta Device (Inline Popover) */
+.p-device-add-panel {
+  padding: 8px 14px;
+  background: #F0F9FF;
+  border-bottom: 1px solid #BAE6FD;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  animation: fadeIn 0.15s ease;
+}
+
+.p-device-presets {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.device-preset-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #FFFFFF;
+  border: 1px solid #93C5FD;
+  color: #0369A1;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.device-preset-btn:hover {
+  background: #E0F2FE;
+  border-color: #60A5FA;
+}
+.device-preset-btn.active {
+  background: #0284C7;
+  color: #FFFFFF;
+  border-color: #0284C7;
+  font-weight: 700;
+}
+
+.p-device-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.device-text-input {
+  padding: 3px 8px;
+  font-size: 11.5px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  flex: 1;
+  min-width: 140px;
+  max-width: 260px;
+  background: #FFFFFF;
+}
+
+.device-date-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #475569;
+}
+
+.device-date-input {
+  padding: 2px 6px;
+  font-size: 11.5px;
+  border-radius: 4px;
+  border: 1px solid #94A3B8;
+  background: #FFFFFF;
+}
+
+/* ===== SAPS II Calculator Modal Dialog ===== */
+.saps-modal-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 94vw;
+  max-width: 860px;
+  max-height: 92vh;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+  z-index: 1210;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.saps-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+}
+
+.saps-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.saps-summary-banner {
+  padding: 8px 16px;
+  background: #F1F5F9;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.saps-score-box,
+.saps-mortality-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.saps-score-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.03em;
+}
+
+.saps-score-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1E3A8A;
+  line-height: 1.1;
+}
+
+.saps-mortality-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #DC2626;
+  line-height: 1.1;
+}
+
+.saps-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.saps-tabs {
+  display: flex;
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  padding: 4px 14px 0;
+  gap: 4px;
+  scrollbar-width: none;
+}
+.saps-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.saps-tab-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+.saps-tab-btn:hover {
+  color: #0F172A;
+  background: #E2E8F0;
+}
+.saps-tab-btn.active {
+  background: #FFFFFF;
+  color: #1E40AF;
+  border-color: var(--line);
+  border-bottom-color: #FFFFFF;
+  margin-bottom: -1px;
+  font-weight: 700;
+}
+
+.saps-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: #FFFFFF;
+}
+
+.saps-fields-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.saps-field-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 12px;
+  background: #F8FAFC;
+}
+
+.saps-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  color: #0F172A;
+}
+
+.saps-field-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1E40AF;
+  background: #DBEAFE;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.saps-field-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.saps-opt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: #FFFFFF;
+  font-size: 11.5px;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+}
+.saps-opt-btn:hover {
+  border-color: #94A3B8;
+  background: #F1F5F9;
+}
+.saps-opt-btn.selected {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+  color: #1D4ED8;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px #3B82F6;
+}
+
+.saps-opt-points {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.saps-opt-points.nonzero {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+.saps-opt-points.zero {
+  background: #ECFDF5;
+  color: #047857;
+}
+
+.saps-footer {
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F8FAFC;
+}
+
+
 
 
 

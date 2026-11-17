@@ -32,6 +32,16 @@ export interface Sample {
   note: string;
 }
 
+export interface PatientDevice {
+  id: string;
+  pid: string;
+  type: string; // 'CVC' | 'Art' | 'CV' | 'PICC' | 'Midline' | string
+  insertionDate: string; // YYYY-MM-DD
+  removalDate?: string | null;
+  site?: string;
+  note?: string;
+}
+
 export interface Patient {
   id: string;
   bed: number | string; // string used for non-numeric beds, e.g. "9bis"
@@ -48,6 +58,7 @@ export interface Patient {
   } | null;
   nodx: boolean;
   isDemo?: boolean;
+  saps2?: number | null;
 }
 
 export interface AntibioticTherapy {
@@ -69,4 +80,5 @@ export interface DB {
   patients: Patient[];
   samples: Sample[];
   antibiotics?: AntibioticTherapy[];
+  devices?: PatientDevice[];
 }

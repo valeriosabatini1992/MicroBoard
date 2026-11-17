@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { DB, Patient, Sample, CatType, AntibioticTherapy } from './types';
+import { DB, Patient, Sample, CatType, AntibioticTherapy, PatientDevice } from './types';
 import { seed } from './data';
 import { todayISO } from './logic';
 import { firestore } from './firebase';
@@ -37,6 +37,9 @@ interface DashboardContextType {
   updateAntibiotic: (id: string, updates: Partial<AntibioticTherapy>) => void;
   stopAntibiotic: (id: string, stopReason?: string, endDate?: string) => void;
   deleteAntibiotic: (id: string) => void;
+  addDevice: (device: Omit<PatientDevice, 'id'> | PatientDevice) => void;
+  updateDevice: (id: string, updates: Partial<PatientDevice>) => void;
+  deleteDevice: (id: string) => void;
   exportData: () => void;
   importData: (db: DB) => void;
   resetDemoData: () => void;
@@ -87,6 +90,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
             isRemoteUpdate.current = true;
             if (!remoteData.antibiotics) {
               remoteData.antibiotics = seed.antibiotics || [];
+            }
+            if (!remoteData.devices) {
+              remoteData.devices = seed.devices || [];
             }
             setDb(remoteData);
             try {
@@ -208,6 +214,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       if (d.antibiotics) {
         d.antibiotics = d.antibiotics.filter(a => a.pid !== pid);
       }
+      if (d.devices) {
+        d.devices = d.devices.filter(dev => dev.pid !== pid);
+      }
     });
     updateUi({ pid: null, confirmFree: null });
   };
@@ -299,6 +308,34 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const addDevice = (device: Omit<PatientDevice, 'id'> | PatientDevice) => {
+    updateDb(d => {
+      if (!d.devices) d.devices = [];
+      const newDev: PatientDevice = {
+        ...device,
+        id: (device as any).id || ('dev_' + Date.now() + Math.random().toString(36).substring(2, 6)),
+      };
+      d.devices.push(newDev);
+    });
+  };
+
+  const updateDevice = (id: string, updates: Partial<PatientDevice>) => {
+    updateDb(d => {
+      if (!d.devices) return;
+      const dev = d.devices.find(x => x.id === id);
+      if (dev) {
+        Object.assign(dev, updates);
+      }
+    });
+  };
+
+  const deleteDevice = (id: string) => {
+    updateDb(d => {
+      if (!d.devices) return;
+      d.devices = d.devices.filter(x => x.id !== id);
+    });
+  };
+
   const exportData = () => {
     const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -332,6 +369,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       toggleNodx, freeBed, addSample, updateSample, deleteSample,
       addPatient, updatePatient, deletePatient,
       addAntibiotic, updateAntibiotic, stopAntibiotic, deleteAntibiotic,
+      addDevice, updateDevice, deleteDevice,
       exportData, importData, resetDemoData
     }}>
       {children}
