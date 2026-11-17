@@ -4,7 +4,8 @@ import { useDashboard } from '@/lib/store';
 import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture, todayISO, CLASSIC_DEVICES, ORGS, calculateSaps2Mortality } from '@/lib/logic';
 import { CatType, Sample, AntibioticTherapy, PatientDevice } from '@/lib/types';
 import { Chip } from './DashboardComponents';
-import { Pencil, Trash2, Pill, History, Clock, RotateCcw, Calculator, Plus } from 'lucide-react';
+import { Pencil, Trash2, Pill, History, Clock, RotateCcw, Calculator, Plus, FileDown } from 'lucide-react';
+import { generatePatientPdfReport } from '@/lib/pdfReport';
 
 const SHORT_CAT: Record<string, string> = {
   sig: '🔴 Infezione',
@@ -88,6 +89,11 @@ export const PatientDetailModal = () => {
     setCustomDeviceName('');
     setSelectedDevicePreset('');
     setShowAddDevice(false);
+  };
+
+  const handleDownloadPdfReport = () => {
+    if (!currentPatient) return;
+    generatePatientPdfReport(currentPatient, ss, patientAbx, patientDevices, db.operator);
   };
 
   const isPos = (s: Sample) => s.result === 'pos';
@@ -275,6 +281,16 @@ export const PatientDetailModal = () => {
                 </div>
 
                 <div className="p-modal-header-actions">
+                  <button 
+                    type="button" 
+                    className="btn small p-btn-report"
+                    onClick={handleDownloadPdfReport}
+                    title="Scarica relazione microbiologica e infettivologica in PDF"
+                  >
+                    <FileDown size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    Report
+                  </button>
+
                   <button 
                     type="button" 
                     className="btn small primary p-btn-add"
