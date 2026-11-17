@@ -254,7 +254,7 @@ export function generatePatientPdfReport(
 
   // 5. SECTION 3: TERAPIA ANTIBIOTICA
   doc.rect(marginX, ptY(currY + 16), contentWidth, 16, cTeal);
-  doc.text('3. TERAPIA ANTIBIOTICA (IN CORSO E STORICO) - MOTIVAZIONI CLINICHE', marginX + 8, ptY(currY + 11), 'F2', 9.5, [255, 255, 255]);
+  doc.text('3. TERAPIA ANTIBIOTICA (IN CORSO E STORICO) - INDICAZIONI CLINICHE', marginX + 8, ptY(currY + 11), 'F2', 9.5, [255, 255, 255]);
   currY += 20;
 
   if (antibiotics.length === 0) {
@@ -265,7 +265,7 @@ export function generatePatientPdfReport(
     doc.text('FARMACO / POSOLOGIA', marginX + 6, ptY(currY + 10), 'F2', 8, cDarkNavy);
     doc.text('PERIODO & GG', marginX + 160, ptY(currY + 10), 'F2', 8, cDarkNavy);
     doc.text('STATO', marginX + 275, ptY(currY + 10), 'F2', 8, cDarkNavy);
-    doc.text("PERCHE' L'HA FATTA (INDICAZIONE)", marginX + 335, ptY(currY + 10), 'F2', 8, cDarkNavy);
+    doc.text('INDICAZIONE', marginX + 335, ptY(currY + 10), 'F2', 8, cDarkNavy);
     currY += 18;
 
     const sortedAbx = [...antibiotics].sort((a, b) => {
