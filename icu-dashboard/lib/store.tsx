@@ -120,10 +120,12 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const saveToFirestore = async (newDb: DB) => {
     setSyncStatus('saving');
     try {
+      // Sanitize JSON payload to strip any undefined values and prevent Firestore rejection
+      const cleanDb: DB = JSON.parse(JSON.stringify(newDb));
       const docRef = doc(firestore, 'wards', WARD_DOC_ID);
-      await setDoc(docRef, newDb);
+      await setDoc(docRef, cleanDb);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newDb));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanDb));
       } catch (e) {}
       setSyncStatus('synced');
     } catch (error) {
@@ -138,11 +140,13 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         ...prev, 
         patients: [...prev.patients], 
         samples: [...prev.samples],
-        antibiotics: prev.antibiotics ? [...prev.antibiotics] : []
+        antibiotics: prev.antibiotics ? [...prev.antibiotics] : [],
+        devices: prev.devices ? [...prev.devices] : []
       };
       fn(next);
-      saveToFirestore(next);
-      return next;
+      const cleanDb: DB = JSON.parse(JSON.stringify(next));
+      saveToFirestore(cleanDb);
+      return cleanDb;
     });
   };
 
@@ -261,19 +265,40 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addPatient = (patient: Patient) => {
+    const cleanPatient: Patient = {
+      id: patient.id || ('p' + Date.now()),
+      bed: patient.bed,
+      code: patient.code,
+      age: patient.age,
+      sex: patient.sex,
+      admitted: patient.admitted,
+      summary: patient.summary || '',
+      dx: patient.dx || '',
+      iso: patient.iso || null,
+      nodx: Boolean(patient.nodx),
+      saps2: typeof patient.saps2 === 'number' ? patient.saps2 : null,
+    };
     updateDb(d => {
-      d.patients.push(patient);
+      d.patients.push(cleanPatient);
     });
-    updateUi({ pid: patient.id });
+    updateUi({ pid: cleanPatient.id });
   };
 
   const addAntibiotic = (abx: Omit<AntibioticTherapy, 'id'> | AntibioticTherapy) => {
     updateDb(d => {
       if (!d.antibiotics) d.antibiotics = [];
       const newAbx: AntibioticTherapy = {
-        ...abx,
         id: (abx as any).id || ('abx_' + Date.now() + Math.random().toString(36).substring(2, 6)),
-        status: abx.status || 'active'
+        pid: abx.pid,
+        drug: abx.drug,
+        dosage: abx.dosage,
+        route: abx.route || 'EV',
+        startDate: abx.startDate,
+        endDate: abx.endDate || null,
+        status: abx.status || 'active',
+        indication: abx.indication || '',
+        stopReason: abx.stopReason || '',
+        note: abx.note || ''
       };
       d.antibiotics.push(newAbx);
     });
@@ -312,8 +337,13 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     updateDb(d => {
       if (!d.devices) d.devices = [];
       const newDev: PatientDevice = {
-        ...device,
         id: (device as any).id || ('dev_' + Date.now() + Math.random().toString(36).substring(2, 6)),
+        pid: device.pid,
+        type: device.type,
+        insertionDate: device.insertionDate,
+        removalDate: device.removalDate || null,
+        site: device.site || '',
+        note: device.note || ''
       };
       d.devices.push(newDev);
     });

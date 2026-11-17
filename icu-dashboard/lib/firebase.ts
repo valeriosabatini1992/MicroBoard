@@ -14,10 +14,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with multi-tab persistent offline cache
+// Initialize Firestore with multi-tab persistent offline cache and ignoreUndefinedProperties
 let dbInstance;
 try {
   dbInstance = initializeFirestore(app, {
+    ignoreUndefinedProperties: true,
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager(),
     }),
