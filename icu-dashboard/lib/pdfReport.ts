@@ -153,8 +153,8 @@ export function generatePatientPdfReport(
   doc.text(`Anagrafica: ${patient.age} anni, Sesso ${patient.sex}   |   Ricovero: ${admittedDateStr} (${degDays} deg giorno di degenza)`, marginX + 10, ptY(currY + 28), 'F1', 9, cGrayText);
 
   const dxFull = patient.dx ? `${patient.summary} - ${patient.dx}` : (patient.summary || 'Non specificata');
-  doc.text(`Quadro Clinico / Diagnosi:`, marginX + 10, ptY(currY + 41), 'F1', 9, cDarkNavy);
-  doc.text(dxFull.slice(0, 75), marginX + 125, ptY(currY + 41), 'F2', 9, cDarkNavy);
+  doc.text(`Diagnosi:`, marginX + 10, ptY(currY + 41), 'F1', 9, cDarkNavy);
+  doc.text(dxFull.slice(0, 85), marginX + 60, ptY(currY + 41), 'F2', 9, cDarkNavy);
 
   doc.text(`${sapsStr}   |   ${isoStr}   |   ${devStr.slice(0, 48)}`, marginX + 10, ptY(currY + 56), 'F1', 8.5, [100, 116, 139]);
 

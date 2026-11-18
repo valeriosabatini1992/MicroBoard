@@ -296,7 +296,7 @@ export const Modals = () => {
 
     addPatient({
       id: 'p' + Date.now(), bed: modalBed, code, age, sex: aSex, admitted: todayISO,
-      summary: aSum.trim() || 'Quadro clinico non indicato', dx: '', iso: null, nodx: false,
+      summary: aSum.trim() || 'Diagnosi non indicata', dx: '', iso: null, nodx: false,
       saps2: aSaps2 ? parseInt(aSaps2, 10) : null
     });
     close();
@@ -327,7 +327,7 @@ export const Modals = () => {
       age,
       sex: epSex,
       admitted: epAdmitted || todayISO,
-      summary: epSum.trim() || 'Quadro clinico non indicato',
+      summary: epSum.trim() || 'Diagnosi non indicata',
       dx: epDx.trim(),
       iso: isoData,
       nodx: epNodx,
@@ -702,7 +702,7 @@ export const Modals = () => {
                 </button>
               </div>
 
-              <label className="fld full">Quadro clinico<input type="text" placeholder="es. Polmonite grave, ventilazione meccanica" value={aSum} onChange={e => setASum(e.target.value)} /></label>
+              <label className="fld full">Diagnosi<input type="text" placeholder="es. Polmonite grave, ventilazione meccanica" value={aSum} onChange={e => setASum(e.target.value)} /></label>
             </div>
             <div className="m-foot">
               <p className="err" role="alert">{aErr}</p>
@@ -763,7 +763,7 @@ export const Modals = () => {
                 </>
               )}
 
-              <label className="fld full">Sintesi clinica / Quadro d'ingresso
+              <label className="fld full">Diagnosi / Sintesi d'ingresso
                 <input type="text" placeholder="es. Sepsi addominale post-operatoria, shock settico" value={epSum} onChange={e => setEpSum(e.target.value)} />
               </label>
 
