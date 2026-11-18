@@ -45,12 +45,12 @@ export const seed: DB = {
     {id:'p1', bed:1, code:'TI-0417', age:58, sex:'M', admitted:ago(3), summary:'Meningite batterica', dx:'Meningite pneumococcica', iso:null, nodx:false, saps2: 38},
     {id:'p2', bed:2, code:'TI-0388', age:47, sex:'F', admitted:ago(9), summary:'Encefalite', dx:'Encefalite da West Nile virus', iso:null, nodx:false, saps2: 29},
     {id:'p3', bed:3, code:'TI-0402', age:71, sex:'M', admitted:ago(11), summary:'Encefalite', dx:'Eziologia non ancora identificata', iso:null, nodx:true, saps2: 41},
-    {id:'p4', bed:4, code:'TI-0421', age:66, sex:'F', admitted:ago(14), summary:'Polmonite associata a ventilatore', dx:'VAP da Pseudomonas aeruginosa resistente ai carbapenemi', iso:{type:'Contatto', since:ago(6), reason:'Pseudomonas CR'}, nodx:false, saps2: 56},
+    {id:'p4', bed:4, code:'TI-0421', age:66, sex:'F', admitted:ago(14), summary:'Polmonite associata a ventilatore', dx:'VAP da Pseudomonas aeruginosa resistente ai carbapenemi', iso:{type:'Contatto', since:ago(6), reason:'Pseudomonas CR'}, nodx:false, saps2: 56, airway: 'IOT'},
     {id:'p5', bed:5, code:'TI-0409', age:63, sex:'M', admitted:ago(20), summary:'Sepsi addominale post-operatoria', dx:'Colonizzazione rettale da KPC', iso:{type:'Contatto', since:ago(15), reason:'CRE da tampone rettale'}, nodx:false, saps2: 44},
     {id:'p6', bed:6, code:'TI-0425', age:79, sex:'F', admitted:ago(8), summary:'Insufficienza respiratoria acuta', dx:'Encefalite Erpetica HSV-1', iso:{type:'Contatto', since:ago(7), reason:'MRSA da tampone nasale'}, nodx:false, saps2: 48},
     {id:'p7', bed:7, code:'TI-0431', age:52, sex:'M', admitted:ago(5), summary:'Shock settico di origine addominale', dx:'', iso:null, nodx:false, saps2: 62},
     {id:'p8', bed:8, code:'TI-0399', age:34, sex:'F', admitted:ago(12), summary:'Sepsi da catetere venoso centrale', dx:'Batteriemia da S. aureus', iso:null, nodx:false, saps2: 32},
-    {id:'p9', bed:9, code:'TI-0433', age:45, sex:'M', admitted:ago(2), summary:'Politrauma, ventilazione meccanica', dx:'', iso:null, nodx:false, saps2: 37},
+    {id:'p9', bed:9, code:'TI-0433', age:45, sex:'M', admitted:ago(2), summary:'Politrauma, ventilazione meccanica', dx:'', iso:null, nodx:false, saps2: 37, airway: 'TRK'},
     {id:'p10', bed:10, code:'TI-0410', age:81, sex:'M', admitted:ago(10), summary:'Diarrea in corso di terapia antibiotica', dx:'Infezione da Clostridioides difficile', iso:{type:'Contatto', since:ago(3), reason:'Clostridioides difficile'}, nodx:false, saps2: 45}
   ],
   samples: [

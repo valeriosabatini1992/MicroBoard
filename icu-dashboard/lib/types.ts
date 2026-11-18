@@ -60,6 +60,7 @@ export interface Patient {
   nodx: boolean;
   isDemo?: boolean;
   saps2?: number | null;
+  airway?: 'IOT' | 'TRK' | null;
 }
 
 export interface AntibioticTherapy {

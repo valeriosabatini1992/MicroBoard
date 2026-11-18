@@ -65,6 +65,24 @@ export const BedBoard = () => {
           <span className="bed-no">Letto {n}</span>
           <span className="bed-id">
             {p.code}, {p.age} {p.sex}
+            {p.airway && (
+              <span 
+                className="bed-airway-tag" 
+                style={{
+                  marginLeft: '4px',
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  background: p.airway === 'TRK' ? '#f0fdf4' : '#eff6ff',
+                  color: p.airway === 'TRK' ? '#15803d' : '#1d4ed8',
+                  border: p.airway === 'TRK' ? '1px solid #bbf7d0' : '1px solid #bfdbfe'
+                }}
+                title={p.airway === 'TRK' ? 'Paziente Tracheostomizzato (TRK)' : 'Intubazione Oro-Tracheale (IOT)'}
+              >
+                🫁 {p.airway}
+              </span>
+            )}
             {p.saps2 != null && (
               <span className="bed-saps-tag" title={`SAPS II: ${p.saps2}`}>
                 SAPS {p.saps2}

@@ -23,6 +23,7 @@ export const PatientDetailModal = () => {
     stopIsolation, 
     freeBed,
     deletePatient,
+    updatePatient,
     confirmSample, 
     reopenSample,
     updateSample,
@@ -231,6 +232,21 @@ export const PatientDetailModal = () => {
                     <span className="nav-bed-summary muted">{p.summary}</span>
                   </div>
                   <div className="nav-bed-badges">
+                    {p.airway && (
+                      <span 
+                        className="mini-badge" 
+                        style={{ 
+                          fontSize: '8.5px', 
+                          fontWeight: 700,
+                          background: p.airway === 'TRK' ? '#f0fdf4' : '#eff6ff', 
+                          color: p.airway === 'TRK' ? '#15803d' : '#1d4ed8', 
+                          border: p.airway === 'TRK' ? '1px solid #bbf7d0' : '1px solid #bfdbfe' 
+                        }} 
+                        title={`Via aerea: ${p.airway}`}
+                      >
+                        {p.airway}
+                      </span>
+                    )}
                     {hasMdro && <span className="mini-badge mdro" title="MDRO">M</span>}
                     {p.iso && <span className="mini-badge iso" title={`Isolamento ${p.iso.type}`}>I</span>}
                   </div>
@@ -256,6 +272,58 @@ export const PatientDetailModal = () => {
                     <span className="muted p-patient-meta">
                       {currentPatient.age}a {currentPatient.sex} • Ricoverato {fmtShortDate(currentPatient.admitted)} (gg {daysSince(currentPatient.admitted) + 1})
                     </span>
+
+                    {/* Via aerea (IOT / TRK) */}
+                    <div 
+                      className="p-header-airway-container"
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '3px', 
+                        background: '#f8fafc', 
+                        padding: '2px 6px', 
+                        borderRadius: '6px', 
+                        border: '1px solid var(--line)' 
+                      }}
+                    >
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--sub)', marginRight: '2px' }}>Via aerea:</span>
+                      <button
+                        type="button"
+                        onClick={() => updatePatient(currentPatient.id, { airway: currentPatient.airway === 'IOT' ? null : 'IOT' })}
+                        style={{
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: currentPatient.airway === 'IOT' ? 700 : 500,
+                          border: currentPatient.airway === 'IOT' ? '1.5px solid #2563eb' : '1px solid var(--line)',
+                          background: currentPatient.airway === 'IOT' ? '#eff6ff' : '#ffffff',
+                          color: currentPatient.airway === 'IOT' ? '#1d4ed8' : 'var(--text-main)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title="Intubazione Oro-Tracheale (IOT). Clicca per attivare/disattivare."
+                      >
+                        {currentPatient.airway === 'IOT' ? '✓ IOT' : 'IOT'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updatePatient(currentPatient.id, { airway: currentPatient.airway === 'TRK' ? null : 'TRK' })}
+                        style={{
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: currentPatient.airway === 'TRK' ? 700 : 500,
+                          border: currentPatient.airway === 'TRK' ? '1.5px solid #16a34a' : '1px solid var(--line)',
+                          background: currentPatient.airway === 'TRK' ? '#f0fdf4' : '#ffffff',
+                          color: currentPatient.airway === 'TRK' ? '#15803d' : 'var(--text-main)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title="Tracheostomizzato (TRK). Clicca per attivare/disattivare."
+                      >
+                        {currentPatient.airway === 'TRK' ? '✓ TRK' : 'TRK'}
+                      </button>
+                    </div>
 
                     {/* Score di gravità SAPS II */}
                     {typeof currentPatient.saps2 === 'number' ? (

@@ -28,7 +28,7 @@ export const BEDS = 12;
 export const SITES = ['Sangue', 'Liquor', 'Liquido pleurico', 'Aspirato tracheale', 'BAL', 'Urine', 'Tampone rettale', 'Tampone nasale', 'Siero', 'Feci', 'Ferita o altro'];
 export const TESTS = ['Colturale', 'PCR/biologia molecolare', 'Sierologia', 'Antigene', 'Tossina'];
 export const MDROS = ['', 'MRSA', 'VRE', 'ESBL', 'CRE', 'Acinetobacter CR', 'Pseudomonas CR', 'Candida auris'];
-export const CLASSIC_DEVICES = ['CVC', 'Art', 'CV', 'PICC', 'Midline'] as const;
+export const CLASSIC_DEVICES = ['CVC', 'Art', 'CV', 'PICC', 'Midline', 'IOT', 'TRK'] as const;
 
 export const PCR_RESISTANCE_GENES = [
   'Van A',

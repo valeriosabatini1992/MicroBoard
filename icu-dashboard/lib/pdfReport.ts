@@ -150,7 +150,8 @@ export function generatePatientPdfReport(
   doc.rect(marginX, ptY(currY + 68), contentWidth, 68, [248, 250, 252], cBorder, 0.7);
 
   doc.text(`LETTO ${patient.bed} - ID: ${patient.code}`, marginX + 10, ptY(currY + 15), 'F2', 12, cDarkNavy);
-  doc.text(`Anagrafica: ${patient.age} anni, Sesso ${patient.sex}   |   Ricovero: ${admittedDateStr} (${degDays} deg giorno di degenza)`, marginX + 10, ptY(currY + 28), 'F1', 9, cGrayText);
+  const airwayStr = patient.airway ? `   |   Via aerea: ${patient.airway}` : '';
+  doc.text(`Anagrafica: ${patient.age} anni, Sesso ${patient.sex}   |   Ricovero: ${admittedDateStr} (${degDays} deg giorno di degenza)${airwayStr}`, marginX + 10, ptY(currY + 28), 'F1', 9, cGrayText);
 
   const dxFull = patient.dx ? `${patient.summary} - ${patient.dx}` : (patient.summary || 'Non specificata');
   doc.text(`Diagnosi:`, marginX + 10, ptY(currY + 41), 'F1', 9, cDarkNavy);

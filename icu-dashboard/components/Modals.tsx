@@ -47,6 +47,7 @@ export const Modals = () => {
   const [aSex, setASex] = useState('M');
   const [aSum, setASum] = useState('');
   const [aSaps2, setASaps2] = useState('');
+  const [aAirway, setAAirway] = useState<'IOT' | 'TRK' | ''>('');
   const [aErr, setAErr] = useState('');
 
   // Edit Patient form state
@@ -58,6 +59,7 @@ export const Modals = () => {
   const [epAdmitted, setEpAdmitted] = useState(todayISO);
   const [epSum, setEpSum] = useState('');
   const [epDx, setEpDx] = useState('');
+  const [epAirway, setEpAirway] = useState<'IOT' | 'TRK' | ''>('');
   const [epSaps2, setEpSaps2] = useState('');
   const [epIsoType, setEpIsoType] = useState('Nessuno');
   const [epIsoReason, setEpIsoReason] = useState('');
@@ -121,7 +123,7 @@ export const Modals = () => {
 
     const handleAdmit = (e: any) => {
       setModalBed(e.detail?.bed || 0);
-      setACode(''); setAAge(''); setASex('M'); setASum(''); setASaps2(''); setAErr('');
+      setACode(''); setAAge(''); setASex('M'); setASum(''); setASaps2(''); setAAirway(''); setAErr('');
       setActiveModal('admit');
     };
 
@@ -136,6 +138,7 @@ export const Modals = () => {
       setEpAdmitted(p.admitted || todayISO);
       setEpSum(p.summary || '');
       setEpDx(p.dx || '');
+      setEpAirway((p.airway as any) || '');
       setEpSaps2(p.saps2 != null ? String(p.saps2) : '');
       setEpIsoType(p.iso?.type || 'Nessuno');
       setEpIsoReason(p.iso?.reason || '');
@@ -297,7 +300,8 @@ export const Modals = () => {
     addPatient({
       id: 'p' + Date.now(), bed: modalBed, code, age, sex: aSex, admitted: todayISO,
       summary: aSum.trim() || 'Diagnosi non indicata', dx: '', iso: null, nodx: false,
-      saps2: aSaps2 ? parseInt(aSaps2, 10) : null
+      saps2: aSaps2 ? parseInt(aSaps2, 10) : null,
+      airway: (aAirway as any) || null
     });
     close();
   };
@@ -331,7 +335,8 @@ export const Modals = () => {
       dx: epDx.trim(),
       iso: isoData,
       nodx: epNodx,
-      saps2: epSaps2 ? parseInt(epSaps2, 10) : null
+      saps2: epSaps2 ? parseInt(epSaps2, 10) : null,
+      airway: (epAirway as any) || null
     });
     close();
   };
@@ -672,6 +677,13 @@ export const Modals = () => {
                   <option>F</option><option>M</option>
                 </select>
               </label>
+              <label className="fld">Via aerea (intubazione / tracheostomia)
+                <select value={aAirway} onChange={e => setAAirway(e.target.value as any)}>
+                  <option value="">Nessuna / Respiro spontaneo</option>
+                  <option value="IOT">IOT (Intubazione Oro-Tracheale)</option>
+                  <option value="TRK">TRK (Tracheostomizzato)</option>
+                </select>
+              </label>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', width: '100%' }}>
                 <label className="fld" style={{ flex: 1 }}>Score SAPS II (opzionale)
@@ -741,6 +753,13 @@ export const Modals = () => {
               </label>
               <label className="fld">Data ricovero
                 <input type="date" value={epAdmitted} max={todayISO} onChange={e => setEpAdmitted(e.target.value)} />
+              </label>
+              <label className="fld">Via aerea (intubazione / tracheostomia)
+                <select value={epAirway} onChange={e => setEpAirway(e.target.value as any)}>
+                  <option value="">Nessuna / Respiro spontaneo</option>
+                  <option value="IOT">IOT (Intubazione Oro-Tracheale)</option>
+                  <option value="TRK">TRK (Tracheostomizzato)</option>
+                </select>
               </label>
               <label className="fld">Misure d'isolamento
                 <select value={epIsoType} onChange={e => setEpIsoType(e.target.value)}>

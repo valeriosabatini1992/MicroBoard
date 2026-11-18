@@ -277,6 +277,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       iso: patient.iso || null,
       nodx: Boolean(patient.nodx),
       saps2: typeof patient.saps2 === 'number' ? patient.saps2 : null,
+      airway: patient.airway || null,
     };
     updateDb(d => {
       d.patients.push(cleanPatient);
