@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from '@/lib/store';
-import { todayISO, suggest, SITES, TESTS, MDROS, ORGS, ANTIBIOTIC_LIST, ADMINISTRATION_ROUTES, STOP_REASONS } from '@/lib/logic';
+import { todayISO, suggest, SITES, TESTS, MDROS, ORGS, ANTIBIOTIC_LIST, ADMINISTRATION_ROUTES, STOP_REASONS, PCR_RESISTANCE_GENES, getMdroForGenes } from '@/lib/logic';
 import { Chip } from './DashboardComponents';
 import { Patient, Sample, AntibioticTherapy, CatType } from '@/lib/types';
 import { Pencil, Pill, StopCircle, UserCheck } from 'lucide-react';
@@ -26,6 +26,8 @@ export const Modals = () => {
   const [fDate, setFDate] = useState(todayISO);
   const [fResult, setFResult] = useState<'pos' | 'neg' | 'pending'>('pos');
   const [fSite, setFSite] = useState('Sangue');
+  const [fCustomSite, setFCustomSite] = useState(false);
+  const [fResistanceGenes, setFResistanceGenes] = useState<string[]>([]);
   const [fBloodSite, setFBloodSite] = useState('CVP/CVC');
   const [fCompleteBlood, setFCompleteBlood] = useState(false);
   const [fTest, setFTest] = useState('Colturale');
@@ -87,8 +89,8 @@ export const Modals = () => {
     const handleNewSample = (e: any) => {
       setEditingSampleId(null);
       setModalPid(e.detail?.pid || db.patients[0]?.id || '');
-      setFDate(todayISO); setFResult('pos'); setFSite('Sangue'); setFBloodSite('CVP/CVC'); setFCompleteBlood(false); setFTest('Colturale');
-      setFOrg(''); setFLabel(''); setFSp('1'); setFSt('2'); setFCfu(''); setFMdro(''); setFCat('sig'); setSErr('');
+      setFDate(todayISO); setFResult('pos'); setFSite('Sangue'); setFCustomSite(false); setFBloodSite('CVP/CVC'); setFCompleteBlood(false); setFTest('Colturale');
+      setFOrg(''); setFLabel(''); setFSp('1'); setFSt('2'); setFCfu(''); setFMdro(''); setFCat('sig'); setFResistanceGenes([]); setSErr('');
       setActiveModal('sample');
     };
 
@@ -99,7 +101,9 @@ export const Modals = () => {
       setModalPid(s.pid);
       setFDate(s.date || todayISO);
       setFResult(s.result);
-      setFSite(s.site || 'Sangue');
+      const site = s.site || 'Sangue';
+      setFSite(site);
+      setFCustomSite(!SITES.includes(site));
       setFBloodSite(s.bloodDrawSite || 'CVP/CVC');
       setFCompleteBlood(Boolean(s.isCompleteBloodCulture));
       setFTest(s.test || 'Colturale');
@@ -110,6 +114,7 @@ export const Modals = () => {
       setFCfu(s.cfu != null ? String(s.cfu) : '');
       setFMdro(s.mdro || '');
       setFCat(s.cat || (s.proposal?.cat || 'sig'));
+      setFResistanceGenes(s.resistanceGenes || []);
       setSErr('');
       setActiveModal('edit-sample');
     };
@@ -208,15 +213,28 @@ export const Modals = () => {
     let finalOrg = fOrg.trim();
     let finalLabel = fLabel.trim();
     let finalMdro = fMdro;
+    let finalSite = fSite.trim() || 'Sangue';
     let finalSp = fSp ? parseInt(fSp, 10) : null;
     let finalSt = fSt ? parseInt(fSt, 10) : null;
     let finalCfu = fCfu ? parseInt(fCfu, 10) : null;
-    const isBlood = fSite === 'Sangue';
+    const isBlood = finalSite === 'Sangue';
     const finalBloodSite = isBlood ? (fBloodSite.trim() || 'CVP/CVC') : undefined;
     const finalCompleteBlood = isBlood ? fCompleteBlood : false;
+    const hasGenes = fResistanceGenes.length > 0;
 
     if (fResult === 'pos') {
-      if (!finalOrg) { setSErr('Indica il germe o il reperto.'); return; }
+      if (!finalOrg && !hasGenes) { 
+        setSErr('Indica il germe o il reperto, oppure seleziona almeno un gene di resistenza PCR.'); 
+        return; 
+      }
+      if (!finalOrg && hasGenes) {
+        finalOrg = fResistanceGenes.length === 1 
+          ? `Gene PCR: ${fResistanceGenes[0]}` 
+          : `Geni PCR: ${fResistanceGenes.join(', ')}`;
+      }
+      if (!finalMdro && hasGenes) {
+        finalMdro = getMdroForGenes(fResistanceGenes);
+      }
       if (isBlood && (finalSp == null || finalSt == null || finalSp < 1 || finalSt < finalSp)) {
         setSErr('Controlla i set: i positivi devono essere almeno 1 e non più dei totali.'); return;
       }
@@ -233,11 +251,16 @@ export const Modals = () => {
 
     if (!isBlood) { finalSp = null; finalSt = null; }
 
+    const isRectalSwab = finalSite === 'Tampone rettale';
+    const finalCat = fResult === 'pos' 
+      ? (activeModal === 'edit-sample' ? fCat : (isRectalSwab ? 'col' : (previewSugg?.cat || fCat))) 
+      : null;
+
     if (activeModal === 'edit-sample' && editingSampleId) {
       updateSample(editingSampleId, {
         date: fDate,
         result: fResult,
-        site: fSite,
+        site: finalSite,
         test: fTest,
         org: finalOrg,
         label: finalLabel,
@@ -245,17 +268,19 @@ export const Modals = () => {
         setsTot: finalSt,
         cfu: finalCfu,
         mdro: finalMdro,
-        cat: fResult === 'pos' ? fCat : null,
+        cat: finalCat,
         status: fResult === 'pos' ? 'confirmed' : fResult === 'neg' ? 'confirmed' : 'pending',
         bloodDrawSite: finalBloodSite,
         isCompleteBloodCulture: finalCompleteBlood,
+        resistanceGenes: hasGenes ? fResistanceGenes : undefined,
       });
     } else {
       addSample({
-        id: '', pid: modalPid, date: fDate, result: fResult, site: fSite, test: fTest,
+        id: '', pid: modalPid, date: fDate, result: fResult, site: finalSite, test: fTest,
         org: finalOrg, label: finalLabel, setsPos: finalSp, setsTot: finalSt, cfu: finalCfu,
         mdro: finalMdro, bloodDrawSite: finalBloodSite, isCompleteBloodCulture: finalCompleteBlood,
-        proposal: null, status: 'none', cat: null, by: '', at: '', note: ''
+        resistanceGenes: hasGenes ? fResistanceGenes : undefined,
+        proposal: null, status: 'none', cat: finalCat, by: '', at: '', note: ''
       });
     }
     close();
@@ -363,8 +388,10 @@ export const Modals = () => {
   const isBlood = fSite === 'Sangue';
   const showSets = pos && isBlood;
   const showCfu = pos && ['BAL', 'Aspirato tracheale', 'Urine'].includes(fSite);
+  const showPcrGenes = fSite === 'Tampone rettale' || fTest === 'PCR/biologia molecolare' || fResistanceGenes.length > 0;
 
-  const previewSugg = pos && fOrg.trim() ? suggest({ result: 'pos', org: fOrg.trim(), site: fSite, test: fTest, setsPos: parseInt(fSp)||0, setsTot: parseInt(fSt)||0, cfu: parseInt(fCfu)||0 }) : null;
+  const previewOrg = fOrg.trim() || (fResistanceGenes.length > 0 ? (fResistanceGenes.length === 1 ? `Gene PCR: ${fResistanceGenes[0]}` : `Geni PCR: ${fResistanceGenes.join(', ')}`) : '');
+  const previewSugg = pos && previewOrg ? suggest({ result: 'pos', org: previewOrg, site: fSite, test: fTest, setsPos: parseInt(fSp)||0, setsTot: parseInt(fSt)||0, cfu: parseInt(fCfu)||0 }) : null;
 
   return (
     <>
@@ -392,17 +419,61 @@ export const Modals = () => {
                   <option value="pos">Positivo</option><option value="neg">Negativo</option><option value="pending">In corso</option>
                 </select>
               </label>
-              <label className="fld">Tipo di campione
-                <select value={fSite} onChange={e => {
-                  const val = e.target.value;
-                  setFSite(val);
-                  if (val === 'Sangue') {
-                    setFBloodSite('CVP/CVC');
-                  }
-                }}>
-                  {SITES.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </label>
+              <div className="fld">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ margin: 0, fontWeight: 500 }}>Tipo di campione</label>
+                  <button
+                    type="button"
+                    onClick={() => setFCustomSite(!fCustomSite)}
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--primary)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontWeight: 600
+                    }}
+                  >
+                    {fCustomSite ? '📋 Menù a tendina' : '✏️ Testo libero'}
+                  </button>
+                </div>
+                {fCustomSite ? (
+                  <div>
+                    <input
+                      type="text"
+                      list="sample-sites-list"
+                      placeholder="es. Liquido ascitico, Biopsia, Tampone ferita..."
+                      value={fSite}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFSite(val);
+                        if (val === 'Sangue') setFBloodSite('CVP/CVC');
+                      }}
+                      autoFocus
+                    />
+                    <datalist id="sample-sites-list">
+                      {SITES.map(v => <option key={v} value={v} />)}
+                    </datalist>
+                  </div>
+                ) : (
+                  <select
+                    value={SITES.includes(fSite) ? fSite : '__custom__'}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '__custom__') {
+                        setFCustomSite(true);
+                      } else {
+                        setFSite(val);
+                        if (val === 'Sangue') setFBloodSite('CVP/CVC');
+                      }
+                    }}
+                  >
+                    {SITES.map(v => <option key={v} value={v}>{v}</option>)}
+                    <option value="__custom__">Altro (testo libero)...</option>
+                  </select>
+                )}
+              </div>
 
               {isBlood && (
                 <>
@@ -446,10 +517,87 @@ export const Modals = () => {
                   {TESTS.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
               </label>
+
+              {showPcrGenes && (
+                <div className="full" style={{ marginTop: '2px', marginBottom: '6px', background: '#f8fafc', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '12.5px', color: 'var(--text-main)' }}>
+                      Rilevamento Geni di Resistenza alla PCR {fSite === 'Tampone rettale' ? '(Tampone rettale)' : ''}
+                    </span>
+                    {fResistanceGenes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFResistanceGenes([])}
+                        style={{ fontSize: '11px', color: 'var(--sub)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        Deseleziona tutti ({fResistanceGenes.length})
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {PCR_RESISTANCE_GENES.map(gene => {
+                      const isChecked = fResistanceGenes.includes(gene);
+                      return (
+                        <button
+                          key={gene}
+                          type="button"
+                          onClick={() => {
+                            let updated: string[];
+                            if (isChecked) {
+                              updated = fResistanceGenes.filter(g => g !== gene);
+                            } else {
+                              updated = [...fResistanceGenes, gene];
+                            }
+                            setFResistanceGenes(updated);
+
+                            if (!isChecked && fTest === 'Colturale') {
+                              setFTest('PCR/biologia molecolare');
+                            }
+
+                            if (!isChecked) {
+                              const autoMdro = getMdroForGenes(updated);
+                              if (autoMdro && (!fMdro || fMdro === 'Nessun MDRO')) {
+                                setFMdro(autoMdro);
+                              }
+                            }
+                          }}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '16px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            border: isChecked ? '1.5px solid #dc2626' : '1px solid var(--line-strong, #cbd5e1)',
+                            background: isChecked ? '#fee2e2' : '#ffffff',
+                            color: isChecked ? '#991b1b' : 'var(--text-main, #334155)',
+                            boxShadow: isChecked ? '0 1px 2px rgba(220, 38, 38, 0.15)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {isChecked ? `✓ ${gene}` : gene}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: 'var(--sub)' }}>
+                    {fResistanceGenes.length > 0
+                      ? `Rilevati: ${fResistanceGenes.join(', ')}. Puoi salvare l'esame anche senza indicare il nome del germe colturale.`
+                      : 'Opzionale: seleziona se rilevati alla PCR (screening rapido CRE: KPC, NDM, OXA-48, VIM, IMP | VRE: Van A, Van B | ESBL: CTX-M).'}
+                  </p>
+                </div>
+              )}
               
               {pos ? (
-                <label className="fld">Germe o reperto
-                  <input type="text" list="orgs" placeholder="es. Klebsiella pneumoniae" value={fOrg} onChange={e => setFOrg(e.target.value)} autoComplete="off" />
+                <label className="fld">
+                  Germe o reperto {fResistanceGenes.length > 0 ? '(opzionale)' : ''}
+                  <input 
+                    type="text" 
+                    list="orgs" 
+                    placeholder={fResistanceGenes.length > 0 ? "Opzionale (es. Klebsiella pneumoniae o lascia vuoto)" : "es. Klebsiella pneumoniae"} 
+                    value={fOrg} 
+                    onChange={e => setFOrg(e.target.value)} 
+                    autoComplete="off" 
+                  />
                   <datalist id="orgs">{ORGS.map(o => <option key={o} value={o} />)}</datalist>
                 </label>
               ) : (
@@ -486,8 +634,8 @@ export const Modals = () => {
                   )}
 
                   <div className="full preview" aria-live="polite">
-                    {!fOrg.trim() ? (
-                      <span className="muted">Indica il germe o il reperto per vedere la proposta di classificazione.</span>
+                    {!previewOrg ? (
+                      <span className="muted">Indica il germe o seleziona un gene PCR per vedere la proposta di classificazione.</span>
                     ) : previewSugg ? (
                       <>
                         <strong>Proposta del sistema</strong>
@@ -610,7 +758,7 @@ export const Modals = () => {
                     <input type="date" value={epIsoSince} max={todayISO} onChange={e => setEpIsoSince(e.target.value)} />
                   </label>
                   <label className="fld">Motivo isolamento
-                    <input type="text" placeholder="es. Portatore KPC, MRSA respiratorio" value={epIsoReason} onChange={e => setEpIsoReason(e.target.value)} />
+                    <input type="text" placeholder="es. Colonizzazione KPC, MRSA respiratorio" value={epIsoReason} onChange={e => setEpIsoReason(e.target.value)} />
                   </label>
                 </>
               )}

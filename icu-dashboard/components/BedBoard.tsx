@@ -101,6 +101,11 @@ export const BedBoard = () => {
                   <div className={`org ${cat}`} style={{ width: '4px', height: '14px', flexShrink: 0, borderRadius: '2px', background: cat === 'sig' ? 'var(--sig)' : cat === 'pend' ? 'var(--pend)' : 'var(--col-b)' }} />
                   <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>
                     <span style={{ fontWeight: cat === 'sig' ? 700 : 500, color: cat === 'sig' ? 'var(--sig)' : 'inherit' }}>{s.org}</span>
+                    {s.resistanceGenes && s.resistanceGenes.length > 0 && !s.org?.includes('PCR') && (
+                      <span className="badge" style={{ marginLeft: '4px', fontSize: '9px', padding: '1px 3px', background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' }}>
+                        PCR: {s.resistanceGenes.join(', ')}
+                      </span>
+                    )}
                     {s.mdro && <span className="badge mdro" style={{ marginLeft: '4px', fontSize: '9px', padding: '1px 3px' }}>{s.mdro.replace(/ .*/,'')}</span>}
                   </div>
                   <div className="muted" style={{ width: '55px', flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', fontSize: '11px' }} title={s.site === 'Sangue' && s.bloodDrawSite ? `${s.site} (${s.bloodDrawSite})` : s.site}>

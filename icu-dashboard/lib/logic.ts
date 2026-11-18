@@ -30,6 +30,27 @@ export const TESTS = ['Colturale', 'PCR/biologia molecolare', 'Sierologia', 'Ant
 export const MDROS = ['', 'MRSA', 'VRE', 'ESBL', 'CRE', 'Acinetobacter CR', 'Pseudomonas CR', 'Candida auris'];
 export const CLASSIC_DEVICES = ['CVC', 'Art', 'CV', 'PICC', 'Midline'] as const;
 
+export const PCR_RESISTANCE_GENES = [
+  'Van A',
+  'Van B',
+  'KPC',
+  'NDM',
+  'OXA-48',
+  'VIM',
+  'IMP',
+  'CTX-M'
+] as const;
+
+export type PcrResistanceGene = typeof PCR_RESISTANCE_GENES[number];
+
+export function getMdroForGenes(genes: string[]): string {
+  if (!genes || genes.length === 0) return '';
+  if (genes.some(g => ['KPC', 'NDM', 'OXA-48', 'VIM', 'IMP'].includes(g))) return 'CRE';
+  if (genes.some(g => ['Van A', 'Van B'].includes(g))) return 'VRE';
+  if (genes.includes('CTX-M')) return 'ESBL';
+  return '';
+}
+
 export const ORGS = [
   'Staphylococcus aureus (MSSA)',
   'Staphylococcus aureus MRSA',

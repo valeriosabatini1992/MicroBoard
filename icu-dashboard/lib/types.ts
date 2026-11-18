@@ -24,6 +24,7 @@ export interface Sample {
   clinical?: boolean;
   bloodDrawSite?: string;
   isCompleteBloodCulture?: boolean;
+  resistanceGenes?: string[];
   proposal: Proposal | null;
   status: StatusType;
   cat: CatType | null;

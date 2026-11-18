@@ -1,5 +1,5 @@
 import { Patient, Sample, AntibioticTherapy, PatientDevice } from './types';
-import { fmtDMY, daysSince, calculateSaps2Mortality } from './logic';
+import { fmtDMY, daysSince, calculateSaps2Mortality, getMdroForGenes } from './logic';
 
 function sanitizePdfText(str: string | number | null | undefined): string {
   if (str == null) return '';
@@ -190,8 +190,12 @@ export function generatePatientPdfReport(
       const dStr = fmtDMY(s.date);
       const siteStr = s.site === 'Sangue' && s.bloodDrawSite ? `${s.site} (${s.bloodDrawSite})` : s.site;
       const testStr = s.test || 'Colturale';
-      const orgStr = s.org || s.label || 'Positivo';
-      const mdroStr = s.mdro ? ` [${s.mdro}]` : '';
+      let orgStr = s.org || s.label || 'Positivo';
+      if (s.resistanceGenes && s.resistanceGenes.length > 0 && !orgStr.includes('PCR')) {
+        orgStr += ` [PCR: ${s.resistanceGenes.join(', ')}]`;
+      }
+      const effectiveMdro = s.mdro || (s.resistanceGenes ? getMdroForGenes(s.resistanceGenes) : '');
+      const mdroStr = effectiveMdro ? ` [${effectiveMdro}]` : '';
       const setsStr = (s.setsPos != null && s.setsTot != null) ? ` (${s.setsPos}/${s.setsTot} set)` : '';
       const fullOrg = `${orgStr}${mdroStr}${setsStr}`;
       const catLabel = s.cat === 'sig' ? 'Infezione' : s.cat === 'col' ? 'Colonizzazione' : 'Da valutare';
@@ -228,7 +232,7 @@ export function generatePatientPdfReport(
     doc.rect(marginX, ptY(currY + 14), contentWidth, 14, [241, 245, 249]);
     doc.text('DATA', marginX + 6, ptY(currY + 10), 'F2', 8, cDarkNavy);
     doc.text('TAMPONE', marginX + 55, ptY(currY + 10), 'F2', 8, cDarkNavy);
-    doc.text('PATOGENO ISOLATO', marginX + 155, ptY(currY + 10), 'F2', 8, cDarkNavy);
+    doc.text('PATOGENO / REPERTO', marginX + 155, ptY(currY + 10), 'F2', 8, cDarkNavy);
     doc.text('PROFILO RESISTENZA', marginX + 340, ptY(currY + 10), 'F2', 8, cDarkNavy);
     doc.text('SIGNIFICATO', marginX + 440, ptY(currY + 10), 'F2', 8, cDarkNavy);
     currY += 18;
@@ -236,8 +240,11 @@ export function generatePatientPdfReport(
     surveillancePositives.forEach(s => {
       const dStr = fmtDMY(s.date);
       const siteStr = s.site;
-      const orgStr = s.org || s.label || 'MDRO Positivo';
-      const mdroStr = s.mdro || 'MDRO';
+      let orgStr = s.org || s.label || 'MDRO Positivo';
+      if (s.resistanceGenes && s.resistanceGenes.length > 0 && !orgStr.includes('PCR')) {
+        orgStr += ` (PCR: ${s.resistanceGenes.join(', ')})`;
+      }
+      const mdroStr = s.mdro || (s.resistanceGenes ? getMdroForGenes(s.resistanceGenes) : '') || 'MDRO';
 
       doc.text(dStr, marginX + 6, ptY(currY + 9), 'F1', 8.5, cDarkNavy);
       doc.text(siteStr.slice(0, 18), marginX + 55, ptY(currY + 9), 'F1', 8.5, cDarkNavy);

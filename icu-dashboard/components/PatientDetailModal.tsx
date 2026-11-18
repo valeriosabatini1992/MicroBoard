@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useDashboard } from '@/lib/store';
-import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture, todayISO, CLASSIC_DEVICES, ORGS, calculateSaps2Mortality } from '@/lib/logic';
+import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture, todayISO, CLASSIC_DEVICES, ORGS, calculateSaps2Mortality, PCR_RESISTANCE_GENES, getMdroForGenes } from '@/lib/logic';
 import { CatType, Sample, AntibioticTherapy, PatientDevice } from '@/lib/types';
 import { Chip } from './DashboardComponents';
 import { Pencil, Trash2, Pill, History, Clock, RotateCcw, Calculator, Plus, FileDown } from 'lucide-react';
@@ -37,6 +37,7 @@ export const PatientDetailModal = () => {
   const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
   const [quickOrg, setQuickOrg] = useState('');
   const [quickMdro, setQuickMdro] = useState('');
+  const [quickGenes, setQuickGenes] = useState<string[]>([]);
   const [confirmDeletePatient, setConfirmDeletePatient] = useState(false);
   const [showAbxHistory, setShowAbxHistory] = useState(true);
 
@@ -115,22 +116,32 @@ export const PatientDetailModal = () => {
     setEditingSampleId(sid);
     setQuickOrg('');
     setQuickMdro('');
+    setQuickGenes([]);
   };
 
   const handleSavePositive = (sid: string) => {
-    if (!quickOrg.trim()) {
-      alert('Inserisci il nome del germe isolato.');
+    const s = ss.find(item => item.id === sid);
+    const hasGenes = quickGenes.length > 0;
+    if (!quickOrg.trim() && !hasGenes) {
+      alert('Inserisci il nome del germe isolato o seleziona almeno un gene di resistenza PCR.');
       return;
     }
+    const finalOrg = quickOrg.trim() || (quickGenes.length === 1 ? `Gene PCR: ${quickGenes[0]}` : `Geni PCR: ${quickGenes.join(', ')}`);
+    const finalMdro = quickMdro || (hasGenes ? getMdroForGenes(quickGenes) : '');
+    const isSurv = s?.site === 'Tampone rettale' || s?.site === 'Tampone nasale';
+
     updateSample(sid, {
       result: 'pos',
-      org: quickOrg.trim(),
-      mdro: quickMdro,
+      org: finalOrg,
+      mdro: finalMdro,
+      resistanceGenes: hasGenes ? quickGenes : undefined,
+      test: (hasGenes && (!s?.test || s.test === 'Colturale')) ? 'PCR/biologia molecolare' : (s?.test || 'Colturale'),
       status: 'confirmed',
-      cat: 'sig',
+      cat: isSurv ? 'col' : 'sig',
       at: new Date().toISOString().slice(0, 10),
     });
     setEditingSampleId(null);
+    setQuickGenes([]);
   };
 
   const handleSaveNegative = (sid: string) => {
@@ -776,6 +787,15 @@ export const PatientDetailModal = () => {
                                     <strong className={`d-org-text ${effectiveCat === 'sig' ? 'sig' : ''}`}>
                                       {s.org}
                                     </strong>
+                                    {s.resistanceGenes && s.resistanceGenes.length > 0 && (
+                                      <span 
+                                        className="badge mini-tag" 
+                                        style={{ background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca', fontWeight: 600, fontSize: '10.5px' }}
+                                        title={`Geni rilevati alla PCR: ${s.resistanceGenes.join(', ')}`}
+                                      >
+                                        PCR: {s.resistanceGenes.join(', ')}
+                                      </span>
+                                    )}
                                     {s.mdro && <span className="badge mdro mini-tag">{s.mdro}</span>}
                                     {s.setsTot && <span className="mini-tag muted desktop-only">{s.setsPos}/{s.setsTot} set</span>}
                                     {s.cfu && <span className="mini-tag muted desktop-only">{s.cfu >= 1000 ? `10^${Math.round(Math.log10(s.cfu))}` : s.cfu} UFC</span>}
@@ -989,36 +1009,72 @@ export const PatientDetailModal = () => {
 
                             {/* Quick Editor for Positives */}
                             {isEditingThis && (
-                              <div className="inline-quick-edit">
-                                <span style={{ fontWeight: 600, fontSize: '12.5px' }}>Referta positività:</span>
-                                <input 
-                                  type="text" 
-                                  placeholder="Nome germe (es. S. aureus)"
-                                  value={quickOrg}
-                                  onChange={e => setQuickOrg(e.target.value)}
-                                  list="patient-modal-orgs"
-                                  style={{ padding: '3px 7px', fontSize: '12.5px', borderRadius: '4px', border: '1px solid var(--line-strong)', flex: 1 }}
-                                />
-                                <datalist id="patient-modal-orgs">
-                                  {ORGS.map(o => (
-                                    <option key={o} value={o} />
-                                  ))}
-                                </datalist>
-                                <select 
-                                  value={quickMdro} 
-                                  onChange={e => setQuickMdro(e.target.value)}
-                                  style={{ padding: '3px 5px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--line-strong)' }}
-                                >
-                                  <option value="">No MDRO</option>
-                                  <option value="MRSA">MRSA</option>
-                                  <option value="VRE">VRE</option>
-                                  <option value="ESBL">ESBL</option>
-                                  <option value="CRE">CRE</option>
-                                  <option value="Pseudomonas CR">Pseudomonas CR</option>
-                                  <option value="Acinetobacter CR">Acinetobacter CR</option>
-                                </select>
-                                <button type="button" className="btn small primary" style={{ fontSize: '12px', padding: '3px 8px' }} onClick={() => handleSavePositive(s.id)}>Salva</button>
-                                <button type="button" className="btn small" style={{ fontSize: '12px', padding: '3px 8px' }} onClick={() => setEditingSampleId(null)}>Annulla</button>
+                              <div className="inline-quick-edit" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '6px' }}>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 600, fontSize: '12.5px' }}>Referta positività:</span>
+                                  <input 
+                                    type="text" 
+                                    placeholder={quickGenes.length > 0 ? "Nome germe (opzionale se selezionati geni)" : "Nome germe (es. K. pneumoniae)"}
+                                    value={quickOrg}
+                                    onChange={e => setQuickOrg(e.target.value)}
+                                    list="patient-modal-orgs"
+                                    style={{ padding: '3px 7px', fontSize: '12.5px', borderRadius: '4px', border: '1px solid var(--line-strong)', flex: 1 }}
+                                  />
+                                  <datalist id="patient-modal-orgs">
+                                    {ORGS.map(o => (
+                                      <option key={o} value={o} />
+                                    ))}
+                                  </datalist>
+                                  <select 
+                                    value={quickMdro} 
+                                    onChange={e => setQuickMdro(e.target.value)}
+                                    style={{ padding: '3px 5px', fontSize: '12px', borderRadius: '4px', border: '1px solid var(--line-strong)' }}
+                                  >
+                                    <option value="">No MDRO</option>
+                                    <option value="MRSA">MRSA</option>
+                                    <option value="VRE">VRE</option>
+                                    <option value="ESBL">ESBL</option>
+                                    <option value="CRE">CRE</option>
+                                    <option value="Pseudomonas CR">Pseudomonas CR</option>
+                                    <option value="Acinetobacter CR">Acinetobacter CR</option>
+                                  </select>
+                                  <button type="button" className="btn small primary" style={{ fontSize: '12px', padding: '3px 8px' }} onClick={() => handleSavePositive(s.id)}>Salva</button>
+                                  <button type="button" className="btn small" style={{ fontSize: '12px', padding: '3px 8px' }} onClick={() => setEditingSampleId(null)}>Annulla</button>
+                                </div>
+
+                                {s.site === 'Tampone rettale' && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', background: '#F8FAFC', padding: '4px 6px', borderRadius: '4px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--sub)', marginRight: '4px' }}>Rilevamento geni PCR:</span>
+                                    {PCR_RESISTANCE_GENES.map(gene => {
+                                      const isSel = quickGenes.includes(gene);
+                                      return (
+                                        <button
+                                          key={gene}
+                                          type="button"
+                                          onClick={() => {
+                                            const next = isSel ? quickGenes.filter(g => g !== gene) : [...quickGenes, gene];
+                                            setQuickGenes(next);
+                                            if (!isSel && !quickMdro) {
+                                              setQuickMdro(getMdroForGenes(next));
+                                            }
+                                          }}
+                                          style={{
+                                            fontSize: '11px',
+                                            padding: '1px 6px',
+                                            borderRadius: '10px',
+                                            border: isSel ? '1.5px solid #dc2626' : '1px solid var(--line-strong)',
+                                            background: isSel ? '#fee2e2' : '#ffffff',
+                                            color: isSel ? '#991b1b' : 'inherit',
+                                            fontWeight: isSel ? 700 : 500,
+                                            cursor: 'pointer'
+                                          }}
+                                        >
+                                          {isSel ? `✓ ${gene}` : gene}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
