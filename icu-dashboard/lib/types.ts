@@ -61,6 +61,7 @@ export interface Patient {
   isDemo?: boolean;
   saps2?: number | null;
   airway?: 'IOT' | 'TRK' | null;
+  allergies?: string | null;
 }
 
 export interface AntibioticTherapy {

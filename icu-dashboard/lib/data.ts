@@ -42,7 +42,7 @@ const conf = (cat: CatType, at: string) => ({ status: 'confirmed' as StatusType,
 export const seed: DB = {
   operator: '',
   patients: [
-    {id:'p1', bed:1, code:'TI-0417', age:58, sex:'M', admitted:ago(3), summary:'Meningite batterica', dx:'Meningite pneumococcica', iso:null, nodx:false, saps2: 38},
+    {id:'p1', bed:1, code:'TI-0417', age:58, sex:'M', admitted:ago(3), summary:'Meningite batterica', dx:'Meningite pneumococcica', iso:null, nodx:false, saps2: 38, allergies: 'Penicilline'},
     {id:'p2', bed:2, code:'TI-0388', age:47, sex:'F', admitted:ago(9), summary:'Encefalite', dx:'Encefalite da West Nile virus', iso:null, nodx:false, saps2: 29},
     {id:'p3', bed:3, code:'TI-0402', age:71, sex:'M', admitted:ago(11), summary:'Encefalite', dx:'Eziologia non ancora identificata', iso:null, nodx:true, saps2: 41},
     {id:'p4', bed:4, code:'TI-0421', age:66, sex:'F', admitted:ago(14), summary:'Polmonite associata a ventilatore', dx:'VAP da Pseudomonas aeruginosa resistente ai carbapenemi', iso:{type:'Contatto', since:ago(6), reason:'Pseudomonas CR'}, nodx:false, saps2: 56, airway: 'IOT'},

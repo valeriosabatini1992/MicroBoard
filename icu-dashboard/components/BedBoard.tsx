@@ -83,6 +83,24 @@ export const BedBoard = () => {
                 🫁 {p.airway}
               </span>
             )}
+            {p.allergies && p.allergies.toLowerCase() !== 'nessuna' && (
+              <span 
+                className="bed-allergy-tag"
+                style={{
+                  marginLeft: '4px',
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  background: '#fef2f2',
+                  color: '#b91c1c',
+                  border: '1px solid #fecaca'
+                }}
+                title={`Allergie note: ${p.allergies}`}
+              >
+                ⚠️ All: {p.allergies}
+              </span>
+            )}
             {p.saps2 != null && (
               <span className="bed-saps-tag" title={`SAPS II: ${p.saps2}`}>
                 SAPS {p.saps2}

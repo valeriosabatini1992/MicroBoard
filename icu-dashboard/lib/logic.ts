@@ -30,6 +30,20 @@ export const TESTS = ['Colturale', 'PCR/biologia molecolare', 'Sierologia', 'Ant
 export const MDROS = ['', 'MRSA', 'VRE', 'ESBL', 'CRE', 'Acinetobacter CR', 'Pseudomonas CR', 'Candida auris'];
 export const CLASSIC_DEVICES = ['CVC', 'Art', 'CV', 'PICC', 'Midline', 'IOT', 'TRK'] as const;
 
+export const COMMON_ALLERGIES = [
+  'Penicilline / Beta-lattamici',
+  'Cefalosporine',
+  'Carbapenemi',
+  'Sulfamidici (Cotrimossazolo)',
+  'Fluorochinoloni',
+  'Vancomicina',
+  'Macrolidi',
+  'Aminoglicosidi',
+  'FANS',
+  'Mezzo di contrasto',
+  'Nessuna allergia nota (NKA)'
+] as const;
+
 export const PCR_RESISTANCE_GENES = [
   'Van A',
   'Van B',

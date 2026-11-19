@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from '@/lib/store';
-import { todayISO, suggest, SITES, TESTS, MDROS, ORGS, ANTIBIOTIC_LIST, ADMINISTRATION_ROUTES, STOP_REASONS, PCR_RESISTANCE_GENES, getMdroForGenes } from '@/lib/logic';
+import { todayISO, suggest, SITES, TESTS, MDROS, ORGS, ANTIBIOTIC_LIST, ADMINISTRATION_ROUTES, STOP_REASONS, PCR_RESISTANCE_GENES, getMdroForGenes, COMMON_ALLERGIES } from '@/lib/logic';
 import { Chip } from './DashboardComponents';
 import { Patient, Sample, AntibioticTherapy, CatType } from '@/lib/types';
 import { Pencil, Pill, StopCircle, UserCheck } from 'lucide-react';
@@ -48,6 +48,7 @@ export const Modals = () => {
   const [aSum, setASum] = useState('');
   const [aSaps2, setASaps2] = useState('');
   const [aAirway, setAAirway] = useState<'IOT' | 'TRK' | ''>('');
+  const [aAllergies, setAAllergies] = useState('');
   const [aErr, setAErr] = useState('');
 
   // Edit Patient form state
@@ -60,6 +61,7 @@ export const Modals = () => {
   const [epSum, setEpSum] = useState('');
   const [epDx, setEpDx] = useState('');
   const [epAirway, setEpAirway] = useState<'IOT' | 'TRK' | ''>('');
+  const [epAllergies, setEpAllergies] = useState('');
   const [epSaps2, setEpSaps2] = useState('');
   const [epIsoType, setEpIsoType] = useState('Nessuno');
   const [epIsoReason, setEpIsoReason] = useState('');
@@ -123,7 +125,7 @@ export const Modals = () => {
 
     const handleAdmit = (e: any) => {
       setModalBed(e.detail?.bed || 0);
-      setACode(''); setAAge(''); setASex('M'); setASum(''); setASaps2(''); setAAirway(''); setAErr('');
+      setACode(''); setAAge(''); setASex('M'); setASum(''); setASaps2(''); setAAirway(''); setAAllergies(''); setAErr('');
       setActiveModal('admit');
     };
 
@@ -139,6 +141,7 @@ export const Modals = () => {
       setEpSum(p.summary || '');
       setEpDx(p.dx || '');
       setEpAirway((p.airway as any) || '');
+      setEpAllergies(p.allergies || '');
       setEpSaps2(p.saps2 != null ? String(p.saps2) : '');
       setEpIsoType(p.iso?.type || 'Nessuno');
       setEpIsoReason(p.iso?.reason || '');
@@ -301,7 +304,8 @@ export const Modals = () => {
       id: 'p' + Date.now(), bed: modalBed, code, age, sex: aSex, admitted: todayISO,
       summary: aSum.trim() || 'Diagnosi non indicata', dx: '', iso: null, nodx: false,
       saps2: aSaps2 ? parseInt(aSaps2, 10) : null,
-      airway: (aAirway as any) || null
+      airway: (aAirway as any) || null,
+      allergies: aAllergies.trim() || null
     });
     close();
   };
@@ -336,7 +340,8 @@ export const Modals = () => {
       iso: isoData,
       nodx: epNodx,
       saps2: epSaps2 ? parseInt(epSaps2, 10) : null,
-      airway: (epAirway as any) || null
+      airway: (epAirway as any) || null,
+      allergies: epAllergies.trim() || null
     });
     close();
   };
@@ -715,6 +720,19 @@ export const Modals = () => {
               </div>
 
               <label className="fld full">Diagnosi<input type="text" placeholder="es. Polmonite grave, ventilazione meccanica" value={aSum} onChange={e => setASum(e.target.value)} /></label>
+
+              <label className="fld full">Allergie note
+                <input 
+                  type="text" 
+                  list="common-allergies-list" 
+                  placeholder="es. Penicilline, Cefalosporine (o lascia vuoto se nessuna)" 
+                  value={aAllergies} 
+                  onChange={e => setAAllergies(e.target.value)} 
+                />
+                <datalist id="common-allergies-list">
+                  {COMMON_ALLERGIES.map(a => <option key={a} value={a} />)}
+                </datalist>
+              </label>
             </div>
             <div className="m-foot">
               <p className="err" role="alert">{aErr}</p>
@@ -788,6 +806,19 @@ export const Modals = () => {
 
               <label className="fld full">Diagnosi microbiologica / Eziologica
                 <input type="text" placeholder="es. VAP da Pseudomonas aeruginosa CR" value={epDx} onChange={e => setEpDx(e.target.value)} />
+              </label>
+
+              <label className="fld full">Allergie note
+                <input 
+                  type="text" 
+                  list="common-allergies-list" 
+                  placeholder="es. Penicilline, Cefalosporine (o lascia vuoto se nessuna)" 
+                  value={epAllergies} 
+                  onChange={e => setEpAllergies(e.target.value)} 
+                />
+                <datalist id="common-allergies-list">
+                  {COMMON_ALLERGIES.map(a => <option key={a} value={a} />)}
+                </datalist>
               </label>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', width: '100%' }}>

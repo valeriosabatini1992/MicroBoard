@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useDashboard } from '@/lib/store';
-import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture, todayISO, CLASSIC_DEVICES, ORGS, calculateSaps2Mortality, PCR_RESISTANCE_GENES, getMdroForGenes } from '@/lib/logic';
+import { BEDS, fmt, fmtDMY, daysSince, isPendingCulture, todayISO, CLASSIC_DEVICES, ORGS, calculateSaps2Mortality, PCR_RESISTANCE_GENES, getMdroForGenes, COMMON_ALLERGIES } from '@/lib/logic';
 import { CatType, Sample, AntibioticTherapy, PatientDevice } from '@/lib/types';
 import { Chip } from './DashboardComponents';
 import { Pencil, Trash2, Pill, History, Clock, RotateCcw, Calculator, Plus, FileDown } from 'lucide-react';
@@ -47,6 +47,10 @@ export const PatientDetailModal = () => {
   const [selectedDevicePreset, setSelectedDevicePreset] = useState('');
   const [customDeviceName, setCustomDeviceName] = useState('');
   const [deviceDate, setDeviceDate] = useState(todayISO);
+
+  // Allergies State
+  const [isEditingAllergies, setIsEditingAllergies] = useState(false);
+  const [allergyInput, setAllergyInput] = useState('');
 
   // Close on Escape key
   useEffect(() => {
@@ -247,6 +251,21 @@ export const PatientDetailModal = () => {
                         {p.airway}
                       </span>
                     )}
+                    {p.allergies && p.allergies.toLowerCase() !== 'nessuna' && (
+                      <span 
+                        className="mini-badge" 
+                        style={{ 
+                          fontSize: '8.5px', 
+                          fontWeight: 700, 
+                          background: '#fef2f2', 
+                          color: '#b91c1c', 
+                          border: '1px solid #fecaca' 
+                        }} 
+                        title={`Allergie note: ${p.allergies}`}
+                      >
+                        ALL
+                      </span>
+                    )}
                     {hasMdro && <span className="mini-badge mdro" title="MDRO">M</span>}
                     {p.iso && <span className="mini-badge iso" title={`Isolamento ${p.iso.type}`}>I</span>}
                   </div>
@@ -356,6 +375,202 @@ export const PatientDetailModal = () => {
                         + SAPS II
                       </button>
                     )}
+
+                    {/* Sezione Allergie Paziente */}
+                    <div className="p-header-allergy-container" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                      {currentPatient.allergies && currentPatient.allergies.toLowerCase() !== 'nessuna' ? (
+                        <div 
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: '#fef2f2',
+                            color: '#b91c1c',
+                            border: '1.5px solid #f87171',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setAllergyInput(currentPatient.allergies || '');
+                            setIsEditingAllergies(true);
+                          }}
+                          title="Allergie note registrate. Clicca per modificare."
+                        >
+                          <span>⚠️ Allergie: {currentPatient.allergies}</span>
+                          <button
+                            type="button"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '11px', color: '#b91c1c', marginLeft: '2px' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updatePatient(currentPatient.id, { allergies: null });
+                            }}
+                            title="Rimuovi allergie"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : currentPatient.allergies?.toLowerCase() === 'nessuna' ? (
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            background: '#f8fafc',
+                            color: '#64748b',
+                            border: '1px solid var(--line)',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setAllergyInput(currentPatient.allergies || '');
+                            setIsEditingAllergies(true);
+                          }}
+                          title="Nessuna allergia nota registrata. Clicca per modificare."
+                        >
+                          <span>🛡️ Nessuna allergia nota</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn small"
+                          style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', borderColor: 'var(--line-strong)', color: '#b91c1c' }}
+                          onClick={() => {
+                            setAllergyInput('');
+                            setIsEditingAllergies(true);
+                          }}
+                          title="Registra allergie a farmaci o alimenti"
+                        >
+                          + Allergia
+                        </button>
+                      )}
+
+                      {/* Quick Popover per modifica rapida allergie */}
+                      {isEditingAllergies && (
+                        <div 
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            marginTop: '6px',
+                            zIndex: 100,
+                            background: '#ffffff',
+                            border: '1px solid var(--line-strong)',
+                            borderRadius: '8px',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                            padding: '12px',
+                            minWidth: '320px',
+                            maxWidth: '420px'
+                          }}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <strong style={{ fontSize: '12.5px', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              ⚠️ Registra Allergie
+                            </strong>
+                            <button 
+                              type="button" 
+                              onClick={() => setIsEditingAllergies(false)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--sub)' }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                            {COMMON_ALLERGIES.map(all => {
+                              const isSelected = allergyInput.toLowerCase().includes(all.toLowerCase());
+                              return (
+                                <button
+                                  key={all}
+                                  type="button"
+                                  onClick={() => {
+                                    if (all === 'Nessuna allergia nota (NKA)') {
+                                      setAllergyInput('Nessuna');
+                                      return;
+                                    }
+                                    const currentList = allergyInput ? allergyInput.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                    if (currentList.includes('Nessuna')) {
+                                      setAllergyInput(all);
+                                    } else if (currentList.includes(all)) {
+                                      setAllergyInput(currentList.filter(x => x !== all).join(', '));
+                                    } else {
+                                      setAllergyInput([...currentList, all].join(', '));
+                                    }
+                                  }}
+                                  style={{
+                                    fontSize: '10.5px',
+                                    padding: '2px 6px',
+                                    borderRadius: '12px',
+                                    border: isSelected ? '1px solid #dc2626' : '1px solid var(--line)',
+                                    background: isSelected ? '#fee2e2' : '#f8fafc',
+                                    color: isSelected ? '#991b1b' : 'var(--text-main)',
+                                    fontWeight: isSelected ? 700 : 500,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {all}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <input
+                            type="text"
+                            placeholder="es. Penicilline, Cefalosporine (anafilassi)"
+                            value={allergyInput}
+                            onChange={e => setAllergyInput(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              fontSize: '12px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--line-strong)',
+                              marginBottom: '8px',
+                              boxSizing: 'border-box'
+                            }}
+                            autoFocus
+                          />
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                            <button
+                              type="button"
+                              className="btn small"
+                              onClick={() => {
+                                updatePatient(currentPatient.id, { allergies: null });
+                                setIsEditingAllergies(false);
+                              }}
+                              style={{ fontSize: '11px', padding: '2px 8px' }}
+                            >
+                              Rimuovi
+                            </button>
+                            <button
+                              type="button"
+                              className="btn small"
+                              onClick={() => setIsEditingAllergies(false)}
+                              style={{ fontSize: '11px', padding: '2px 8px' }}
+                            >
+                              Annulla
+                            </button>
+                            <button
+                              type="button"
+                              className="btn small primary"
+                              onClick={() => {
+                                updatePatient(currentPatient.id, { allergies: allergyInput.trim() || null });
+                                setIsEditingAllergies(false);
+                              }}
+                              style={{ fontSize: '11px', padding: '2px 10px', background: '#dc2626', borderColor: '#dc2626' }}
+                            >
+                              Salva
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

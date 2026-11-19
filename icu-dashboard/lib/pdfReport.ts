@@ -157,7 +157,8 @@ export function generatePatientPdfReport(
   doc.text(`Diagnosi:`, marginX + 10, ptY(currY + 41), 'F1', 9, cDarkNavy);
   doc.text(dxFull.slice(0, 85), marginX + 60, ptY(currY + 41), 'F2', 9, cDarkNavy);
 
-  doc.text(`${sapsStr}   |   ${isoStr}   |   ${devStr.slice(0, 48)}`, marginX + 10, ptY(currY + 56), 'F1', 8.5, [100, 116, 139]);
+  const allergyStr = patient.allergies ? `   |   ALLERGIE: ${patient.allergies}` : '';
+  doc.text(`${sapsStr}   |   ${isoStr}   |   ${devStr.slice(0, 32)}${allergyStr}`, marginX + 10, ptY(currY + 56), 'F1', 8.5, patient.allergies ? cRed : [100, 116, 139]);
 
   currY += 76;
 
